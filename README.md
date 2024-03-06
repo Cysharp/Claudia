@@ -9,7 +9,7 @@ Installation
 ---
 This library is distributed via NuGet, supporting .NET Standard 2.1, .NET 6(.NET 7) and .NET 8 or above.
 
-PM> Install-Package [Claudia](https://www.nuget.org/packages/Claudia)
+> PM> Install-Package [Claudia](https://www.nuget.org/packages/Claudia)
 
 Usage
 ---
