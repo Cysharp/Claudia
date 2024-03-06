@@ -1,6 +1,6 @@
 # Claudia
 
-Unofficial [Anthropic API](https://www.anthropic.com/api) client for .NET.
+Unofficial [Anthropic Claude API](https://www.anthropic.com/api) client for .NET.
 
 We have built a C# API similar to the official [Python SDK](https://github.com/anthropics/anthropic-sdk-python) and [TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript). It supports netstandard2.1, net6.0, and net8.0. If you want to use it in Unity, please reference it from [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
 

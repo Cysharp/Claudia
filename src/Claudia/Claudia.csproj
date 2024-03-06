@@ -10,7 +10,7 @@
 
 		<!-- NuGet Packaging -->
 		<PackageTags>ai;</PackageTags>
-		<Description>Anthropic Claude Client for .NET.</Description>
+		<Description>Unofficial Anthropic Claude API client for .NET.</Description>
 	</PropertyGroup>
 
 	<ItemGroup>
