@@ -33,6 +33,10 @@ var message = await anthropic.Messages.CreateAsync(new()
 Console.WriteLine(message);
 ```
 
+Streaming Messages
+---
+Not yet supported.
+
 Handling errors
 ---
 If the API call fails, a `ClaudiaException` will be thrown. You can check the `ErrorCode`, `Type`, and `Message` from the `ClaudiaException`.
