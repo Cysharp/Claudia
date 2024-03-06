@@ -35,7 +35,7 @@ Console.WriteLine(message);
 
 Streaming Messages
 ---
-Not yet supported.
+Coming Soon.
 
 Handling errors
 ---
