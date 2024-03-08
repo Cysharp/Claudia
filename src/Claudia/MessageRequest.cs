@@ -70,7 +70,7 @@ public class MessageRequest
     /// Recommended for advanced use cases only. You usually only need to use temperature.
     /// </summary>
     [JsonPropertyName("top_p")]
-    public int? TopP { get; init; }
+    public double? TopP { get; init; }
 
     /// <summary>
     /// Only sample from the top K options for each subsequent token.
@@ -78,7 +78,7 @@ public class MessageRequest
     /// Recommended for advanced use cases only. You usually only need to use temperature.
     /// </summary>
     [JsonPropertyName("top_k")]
-    public int? TopK { get; init; }
+    public double? TopK { get; init; }
 
     public override string ToString()
     {
