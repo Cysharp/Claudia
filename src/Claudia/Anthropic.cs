@@ -20,8 +20,13 @@ public class Anthropic : IMessages, IDisposable
     };
 
     readonly HttpClient httpClient;
+    readonly Random random = new Random();
 
     public string ApiKey { get; init; } = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY") ?? "";
+
+    public TimeSpan Timeout { get; init; } = TimeSpan.FromMinutes(10);
+
+    public int MaxRetries { get; init; } = 2;
 
     /// <summary>
     /// Create a Message.
@@ -50,16 +55,17 @@ public class Anthropic : IMessages, IDisposable
         message.Headers.Add("Accept", "application/json");
         message.Content = new ByteArrayContent(bytes);
 
-        var msg = await this.httpClient.SendAsync(message);
-
+        var msg = await RequestWithCancelAsync((httpClient, message), cancellationToken, static (x, ct) => x.httpClient.SendAsync(x.message, ct)).ConfigureAwait(false);
         var statusCode = (int)msg.StatusCode;
 
         switch (statusCode)
         {
             case 200:
-                return (await msg.Content.ReadFromJsonAsync<MessagesResponse>(DefaultJsonSerializerOptions, cancellationToken).ConfigureAwait(false))!;
+                var result = await RequestWithCancelAsync(msg, cancellationToken, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
+                return result!;
             default:
-                var shape = await msg.Content.ReadFromJsonAsync<ErrorResponseShape>(DefaultJsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                var shape = await RequestWithCancelAsync(msg, cancellationToken, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
+
                 var error = shape!.ErrorResponse;
                 var errorMsg = error.Message;
                 var code = (ErrorCode)statusCode;
@@ -69,6 +75,65 @@ public class Anthropic : IMessages, IDisposable
                 }
                 throw new ClaudiaException((ErrorCode)statusCode, error.Type, errorMsg);
         }
+    }
+
+    async Task<TResult> RequestWithCancelAsync<TResult, TState>(TState state, CancellationToken cancellationToken, Func<TState, CancellationToken, Task<TResult>> func)
+    {
+        var retriesRemaining = MaxRetries;
+    RETRY:
+        using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)) // check for timeout
+        {
+            cts.CancelAfter(Timeout);
+
+            try
+            {
+                try
+                {
+                    return await func(state, cts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException(ex.Message, ex, cancellationToken);
+                    }
+                    else
+                    {
+                        throw new TimeoutException($"The request was canceled due to the configured Timeout of {Timeout.TotalSeconds} seconds elapsing.", ex);
+                    }
+
+                    throw;
+                }
+            }
+            catch
+            {
+                if (retriesRemaining > 0)
+                {
+                    var sleep = CalculateDefaultRetryTimeoutMillis(random, retriesRemaining, MaxRetries);
+                    await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
+                    retriesRemaining--;
+                    goto RETRY;
+                }
+                throw;
+            }
+        }
+    }
+
+    // same logic of official client
+    static double CalculateDefaultRetryTimeoutMillis(Random random, int retriesRemaining, int maxRetries)
+    {
+        const double initialRetryDelay = 0.5;
+        const double maxRetryDelay = 8.0;
+
+        var numRetries = maxRetries - retriesRemaining;
+
+        // Apply exponential backoff, but not more than the max.
+        var sleepSeconds = Math.Min(initialRetryDelay * Math.Pow(2, numRetries), maxRetryDelay);
+
+        // Apply some jitter, take up to at most 25 percent of the retry time.
+        var jitter = 1 - random.NextDouble() * 0.25;
+
+        return sleepSeconds * jitter * 1000;
     }
 
     public void Dispose()

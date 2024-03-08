@@ -1,4 +1,6 @@
 ﻿using Claudia;
+using System.Threading;
+using System;
 
 
 
@@ -16,23 +18,41 @@
 //console.log(msg);
 
 
-var anthropic = new Anthropic
+//var anthropic = new Anthropic
+//{
+//    // ApiKey = secret
+//    // Timeout = TimeSpan.FromMilliseconds(1)
+//};
+
+//var msg = await anthropic.Messages.CreateAsync(new()
+//{
+//    Model = "claude-3-opus-20240229",
+//    MaxTokens = 1024,
+//    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+//});
+
+//Console.WriteLine(msg);
+
+
+// Console.WriteLine(TimeSpan.FromMilliseconds(Anthropic.CalculateDefaultRetryTimeoutMillis(Random.Shared, 0, 4)));
+
+
+var MaxRetries = 0;
+var retriesRemaining = MaxRetries;
+RETRY:
+try
 {
-    // ApiKey = secret
-};
-
-var msg = await anthropic.Messages.CreateAsync(new()
+    throw new Exception();
+}
+catch
 {
-    Model = "claude-3-opus-20240229",
-    MaxTokens = 1024,
-    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
-});
-
-Console.WriteLine(msg);
-
-
-
-
-
-
-
+    if (retriesRemaining > 0)
+    {
+        //var sleep = CalculateDefaultRetryTimeoutMillis(random, retriesRemaining, MaxRetries);
+        //await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
+        retriesRemaining--;
+        Console.WriteLine("RETRY");
+        goto RETRY;
+    }
+    throw;
+}
