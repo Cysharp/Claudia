@@ -6,20 +6,17 @@ using System;
 
 
 
-//var anthropic = new Anthropic
-//{
-//    // ApiKey = secret
-//    // Timeout = TimeSpan.FromMilliseconds(1)
-//};
+var anthropic = new Anthropic();
 
-////var msg = await anthropic.Messages.CreateAsync(new()
-////{
-////    Model = Models.Claude3Opus,
-////    MaxTokens = 1024,
-////    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
-////});
+var msg = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Opus,
+    MaxTokens = 1024,
+    // Temperature = 1.0,
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+});
 
-////Console.WriteLine(msg);
+Console.WriteLine(msg);
 
 
 //// error
@@ -61,19 +58,19 @@ using System;
 
 // timeout
 
-// Configure the default for all requests:
-var anthropic = new Anthropic
-{
-    Timeout = TimeSpan.FromSeconds(20) // 20 seconds (default is 10 minutes)
-};
+//// Configure the default for all requests:
+//var anthropic = new Anthropic
+//{
+//    Timeout = TimeSpan.FromSeconds(20) // 20 seconds (default is 10 minutes)
+//};
 
-// Override per-request:
-await anthropic.Messages.CreateAsync(new()
-{
-    MaxTokens = 1024,
-    Messages = [new() { Role = "user", Content = "Hello, Claude" }],
-    Model = "claude-3-opus-20240229"
-}, new()
-{
-    Timeout = TimeSpan.FromSeconds(5)
-});
+//// Override per-request:
+//await anthropic.Messages.CreateAsync(new()
+//{
+//    MaxTokens = 1024,
+//    Messages = [new() { Role = "user", Content = "Hello, Claude" }],
+//    Model = "claude-3-opus-20240229"
+//}, new()
+//{
+//    Timeout = TimeSpan.FromSeconds(5)
+//});

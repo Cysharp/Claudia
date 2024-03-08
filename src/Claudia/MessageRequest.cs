@@ -62,7 +62,7 @@ public class MessageRequest
     /// Note that even with temperature of 0.0, the results will not be fully deterministic.
     /// </summary>
     [JsonPropertyName("temperature")]
-    public int? Temperature { get; init; }
+    public double? Temperature { get; init; }
 
     /// <summary>
     /// Use nucleus sampling.
