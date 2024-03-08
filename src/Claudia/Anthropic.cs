@@ -21,7 +21,7 @@ public class Anthropic : IMessages, IDisposable
 
     readonly HttpClient httpClient;
 
-    public required string ApiKey { get; init; }
+    public string ApiKey { get; init; } = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY") ?? "";
 
     /// <summary>
     /// Create a Message.

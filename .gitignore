@@ -119,3 +119,5 @@ nuget/tools/*
 # publish directory
 out/
 *.tsbuildinfo
+
+sandbox/ConsoleApp1/Properties/launchSettings.json

@@ -1,7 +1,6 @@
 ﻿using Claudia;
 
 
-var secret = "";
 
 //import Anthropic from '@anthropic-ai/sdk';
 
@@ -19,7 +18,7 @@ var secret = "";
 
 var anthropic = new Anthropic
 {
-    ApiKey = secret
+    // ApiKey = secret
 };
 
 var msg = await anthropic.Messages.CreateAsync(new()
