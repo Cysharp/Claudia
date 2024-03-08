@@ -63,6 +63,7 @@ public class MessageRequest
     /// Note that even with temperature of 0.0, the results will not be fully deterministic.
     /// </summary>
     [JsonPropertyName("temperature")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double? Temperature { get; init; }
 
     /// <summary>
@@ -71,6 +72,7 @@ public class MessageRequest
     /// Recommended for advanced use cases only. You usually only need to use temperature.
     /// </summary>
     [JsonPropertyName("top_p")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double? TopP { get; init; }
 
     /// <summary>
@@ -79,11 +81,12 @@ public class MessageRequest
     /// Recommended for advanced use cases only. You usually only need to use temperature.
     /// </summary>
     [JsonPropertyName("top_k")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double? TopK { get; init; }
 
     public override string ToString()
     {
-        return JsonSerializer.Serialize(this, Anthropic.DefaultJsonSerializerOptions);
+        return JsonSerializer.Serialize(this, AnthropicJsonSerialzierContext.Default.Options);
     }
 }
 public class Message

@@ -22,12 +22,6 @@ public class RequestOptions
 
 public class Anthropic : IMessages, IDisposable
 {
-    internal static readonly JsonSerializerOptions DefaultJsonSerializerOptions = new JsonSerializerOptions
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented = false
-    };
-
     readonly HttpClient httpClient;
     readonly Random random = new Random();
 
@@ -64,7 +58,7 @@ public class Anthropic : IMessages, IDisposable
     {
         request.Stream = null;
         var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
-        var result = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
+        var result = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(AnthropicJsonSerialzierContext.Default.Options, ct)).ConfigureAwait(false);
         return result!;
     }
 
@@ -85,7 +79,7 @@ public class Anthropic : IMessages, IDisposable
 
     async Task<HttpResponseMessage> SendRequestAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
     {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(request, DefaultJsonSerializerOptions);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(request, AnthropicJsonSerialzierContext.Default.Options);
 
         var message = new HttpRequestMessage(HttpMethod.Post, ApiEndpoints.Messages);
         message.Headers.Add("x-api-key", ApiKey);
@@ -102,14 +96,14 @@ public class Anthropic : IMessages, IDisposable
             case 200:
                 return msg;
             default:
-                var shape = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
+                var shape = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerialzierContext.Default.Options, ct)).ConfigureAwait(false);
 
                 var error = shape!.ErrorResponse;
                 var errorMsg = error.Message;
                 var code = (ErrorCode)statusCode;
                 if (code == ErrorCode.InvalidRequestError)
                 {
-                    errorMsg += ". Input: " + JsonSerializer.Serialize(request, DefaultJsonSerializerOptions);
+                    errorMsg += ". Input: " + JsonSerializer.Serialize(request, AnthropicJsonSerialzierContext.Default.Options);
                 }
                 throw new ClaudiaException((ErrorCode)statusCode, error.Type, errorMsg);
         }
