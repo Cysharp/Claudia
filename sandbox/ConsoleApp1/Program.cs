@@ -2,6 +2,7 @@
 using System.Threading;
 using System;
 using R3;
+using System.Text;
 
 
 
@@ -9,26 +10,49 @@ using R3;
 // Streaming Responses
 var anthropic = new Anthropic();
 
-var msg = anthropic.Messages.CreateStreamAsync(new()
+var stream = anthropic.Messages.CreateStreamAsync(new()
 {
     Model = Models.Claude3Opus,
     MaxTokens = 1024,
     Messages = [new() { Role = "user", Content = "Hello, Claude." }]
 });
 
-await foreach (var item in msg)
+await foreach (var messageEvent in stream)
 {
-    Console.WriteLine(item.Type);
+    Console.WriteLine(messageEvent);
 }
 
-await msg.ToObservable()
-    .OfType<IMessageStreamEvent, ContentBlockDelta>()
-    .Where(x => x.Delta.Text != null)
-    .ForEachAsync(x =>
-    {
-        Console.WriteLine(x.Delta.Text);
-    });
 
+
+
+
+
+
+//await msg.ToObservable()
+//    .OfType<IMessageStreamEvent, ContentBlockDelta>()
+//    .Where(x => x.Delta.Text != null)
+//    .ForEachAsync(x =>
+//    {
+//        Console.WriteLine(x.Delta.Text);
+//    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//Console.WriteLine("---");
+
+//Console.WriteLine(sb.ToString());
 
 // Counting Tokens
 //var anthropic = new Anthropic();

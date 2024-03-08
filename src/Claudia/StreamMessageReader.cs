@@ -8,6 +8,9 @@ using System.Text.Json.Serialization;
 
 namespace Claudia;
 
+// parser of server-sent events
+// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
+
 internal class StreamMessageReader
 {
     readonly PipeReader reader;
@@ -27,13 +30,8 @@ internal class StreamMessageReader
         {
             var buffer = readResult.Buffer;
 
-            while (TryReadLines(ref buffer, out var streamEvent))
+            while (TryReadData(ref buffer, out var streamEvent))
             {
-                if ((int)streamEvent.TypeKind < 0)
-                {
-                    continue;
-                }
-
                 yield return streamEvent;
             }
 
@@ -43,7 +41,7 @@ internal class StreamMessageReader
     }
 
     [SkipLocalsInit] // optimize stackalloc cost
-    bool TryReadLines(ref ReadOnlySequence<byte> buffer, [NotNullWhen(true)] out IMessageStreamEvent? streamEvent)
+    bool TryReadData(ref ReadOnlySequence<byte> buffer, [NotNullWhen(true)] out IMessageStreamEvent? streamEvent)
     {
         var reader = new SequenceReader<byte>(buffer);
         Span<byte> tempBytes = stackalloc byte[64]; // alloc temp
@@ -106,7 +104,7 @@ internal class StreamMessageReader
                 }
                 else if (first == 'p')
                 {
-                    currentEvent = (MessageStreamEventKind)(-2);
+                    currentEvent = MessageStreamEventKind.Ping;
                 }
                 else if (first == 'e')
                 {
@@ -114,7 +112,9 @@ internal class StreamMessageReader
                 }
                 else
                 {
-                    throw new InvalidOperationException("Unknown Event. Line:" + Encoding.UTF8.GetString(line.ToArray()));
+                    // Unknown Event, Skip.
+                    // throw new InvalidOperationException("Unknown Event. Line:" + Encoding.UTF8.GetString(line.ToArray()));
+                    currentEvent = (MessageStreamEventKind)(-2);
                 }
 
                 continue;
@@ -134,6 +134,9 @@ internal class StreamMessageReader
 
                 switch (currentEvent)
                 {
+                    case MessageStreamEventKind.Ping:
+                        streamEvent = JsonSerializer.Deserialize<Ping>(ref jsonReader)!;
+                        break;
                     case MessageStreamEventKind.MessageStart:
                         streamEvent = JsonSerializer.Deserialize<MessageStart>(ref jsonReader)!;
                         break;
@@ -155,10 +158,8 @@ internal class StreamMessageReader
                     case (MessageStreamEventKind)(-1):
                         var error = JsonSerializer.Deserialize<ErrorResponseShape>(ref jsonReader);
                         throw new ClaudiaException(error!.ErrorResponse.ToErrorCode(), error.ErrorResponse.Type, error.ErrorResponse.Message);
-                    case (MessageStreamEventKind)(-2):
-                        streamEvent = JsonSerializer.Deserialize<Ping>(ref jsonReader)!;
-                        break;
                     default:
+                        // unknown event, skip
                         goto END;
                 }
 
@@ -176,7 +177,7 @@ internal class StreamMessageReader
 public enum MessageStreamEventKind
 {
     // Error(internal, use -1)
-    // Ping(internal, use -2)
+    Ping,
     MessageStart,
     MessageDelta,
     MessageStop,
@@ -191,10 +192,10 @@ public interface IMessageStreamEvent
     MessageStreamEventKind TypeKind { get; }
 }
 
-internal record class Ping : IMessageStreamEvent
+public record class Ping : IMessageStreamEvent
 {
     [JsonIgnore]
-    public MessageStreamEventKind TypeKind => (MessageStreamEventKind)(-2);
+    public MessageStreamEventKind TypeKind => MessageStreamEventKind.Ping;
 
     [JsonPropertyName("type")]
     public required string Type { get; set; }
