@@ -6,19 +6,19 @@ namespace Claudia;
 
 public class ClaudiaException : Exception
 {
-    public ErrorCode ErrorCode { get; }
-    public string Type { get; }
+    public ErrorCode Status { get; }
+    public string Name { get; }
 
     public ClaudiaException(ErrorCode errorCode, string type, string message)
         : base(message)
     {
-        this.ErrorCode = errorCode;
-        this.Type = type;
+        this.Status = errorCode;
+        this.Name = type;
     }
 
     public override string ToString()
     {
-        return $"{Type}: {Message}";
+        return $"{Name}: {Message}";
     }
 }
 

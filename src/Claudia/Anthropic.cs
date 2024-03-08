@@ -8,7 +8,14 @@ namespace Claudia;
 
 public interface IMessages
 {
-    Task<MessagesResponse> CreateAsync(MessageRequest request, CancellationToken cancellationToken = default);
+    Task<MessagesResponse> CreateAsync(MessageRequest request, RequestOptions? overrideOptions = null, CancellationToken cancellationToken = default);
+}
+
+public class RequestOptions
+{
+    public TimeSpan? Timeout { get; set; }
+
+    public int? MaxRetries { get; set; }
 }
 
 public class Anthropic : IMessages, IDisposable
@@ -45,7 +52,7 @@ public class Anthropic : IMessages, IDisposable
         this.httpClient = httpClient;
     }
 
-    async Task<MessagesResponse> IMessages.CreateAsync(MessageRequest request, CancellationToken cancellationToken)
+    async Task<MessagesResponse> IMessages.CreateAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(request, DefaultJsonSerializerOptions);
 
@@ -55,16 +62,16 @@ public class Anthropic : IMessages, IDisposable
         message.Headers.Add("Accept", "application/json");
         message.Content = new ByteArrayContent(bytes);
 
-        var msg = await RequestWithCancelAsync((httpClient, message), cancellationToken, static (x, ct) => x.httpClient.SendAsync(x.message, ct)).ConfigureAwait(false);
+        var msg = await RequestWithCancelAsync((httpClient, message), cancellationToken, overrideOptions, static (x, ct) => x.httpClient.SendAsync(x.message, ct)).ConfigureAwait(false);
         var statusCode = (int)msg.StatusCode;
 
         switch (statusCode)
         {
             case 200:
-                var result = await RequestWithCancelAsync(msg, cancellationToken, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
+                var result = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
                 return result!;
             default:
-                var shape = await RequestWithCancelAsync(msg, cancellationToken, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
+                var shape = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
 
                 var error = shape!.ErrorResponse;
                 var errorMsg = error.Message;
@@ -77,13 +84,14 @@ public class Anthropic : IMessages, IDisposable
         }
     }
 
-    async Task<TResult> RequestWithCancelAsync<TResult, TState>(TState state, CancellationToken cancellationToken, Func<TState, CancellationToken, Task<TResult>> func)
+    async Task<TResult> RequestWithCancelAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, Func<TState, CancellationToken, Task<TResult>> func)
     {
-        var retriesRemaining = MaxRetries;
+        var retriesRemaining = overrideOptions?.MaxRetries ?? MaxRetries;
+        var timeout = overrideOptions?.Timeout ?? Timeout;
     RETRY:
-        using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)) // check for timeout
+        using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
         {
-            cts.CancelAfter(Timeout);
+            cts.CancelAfter(timeout);
 
             try
             {
@@ -146,6 +154,3 @@ public class Anthropic : IMessages, IDisposable
         public static readonly Uri Messages = new Uri("https://api.anthropic.com/v1/messages", UriKind.RelativeOrAbsolute);
     }
 }
-
-
-

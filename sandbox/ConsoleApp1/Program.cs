@@ -4,18 +4,6 @@ using System;
 
 
 
-//import Anthropic from '@anthropic-ai/sdk';
-
-//const anthropic = new Anthropic({
-//  apiKey: 'my_api_key', // defaults to process.env["ANTHROPIC_API_KEY"]
-//});
-
-//const msg = await anthropic.messages.create({
-//  model: "claude-3-opus-20240229",
-//max_tokens: 1024,
-//  messages: [{ role: "user", content: "Hello, Claude" }],
-//});
-//console.log(msg);
 
 
 //var anthropic = new Anthropic
@@ -24,35 +12,68 @@ using System;
 //    // Timeout = TimeSpan.FromMilliseconds(1)
 //};
 
-//var msg = await anthropic.Messages.CreateAsync(new()
+////var msg = await anthropic.Messages.CreateAsync(new()
+////{
+////    Model = Models.Claude3Opus,
+////    MaxTokens = 1024,
+////    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+////});
+
+////Console.WriteLine(msg);
+
+
+//// error
+
+//try
 //{
-//    Model = "claude-3-opus-20240229",
+//    var msg = await anthropic.Messages.CreateAsync(new()
+//    {
+//        Model = Models.Claude3Opus,
+//        MaxTokens = 1024,
+//        Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+//    });
+//}
+//catch (ClaudiaException ex)
+//{
+//    Console.WriteLine((int)ex.Status); // 400(ErrorCode.InvalidRequestError)
+//    Console.WriteLine(ex.Name);        // invalid_request_error
+//    Console.WriteLine(ex.Message);     // Field required. Input:...
+//}
+
+// retry
+
+// Configure the default for all requests:
+//var anthropic = new Anthropic
+//{
+//    MaxRetries = 0, // default is 2
+//};
+
+//// Or, configure per-request:
+//await anthropic.Messages.CreateAsync(new()
+//{
 //    MaxTokens = 1024,
-//    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+//    Messages = [new() { Role = "user", Content = "Hello, Claude" }],
+//    Model = "claude-3-opus-20240229"
+//}, new()
+//{
+//    MaxRetries = 5
 //});
 
-//Console.WriteLine(msg);
+// timeout
 
-
-// Console.WriteLine(TimeSpan.FromMilliseconds(Anthropic.CalculateDefaultRetryTimeoutMillis(Random.Shared, 0, 4)));
-
-
-var MaxRetries = 0;
-var retriesRemaining = MaxRetries;
-RETRY:
-try
+// Configure the default for all requests:
+var anthropic = new Anthropic
 {
-    throw new Exception();
-}
-catch
+    Timeout = TimeSpan.FromSeconds(20) // 20 seconds (default is 10 minutes)
+};
+
+// Override per-request:
+await anthropic.Messages.CreateAsync(new()
 {
-    if (retriesRemaining > 0)
-    {
-        //var sleep = CalculateDefaultRetryTimeoutMillis(random, retriesRemaining, MaxRetries);
-        //await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
-        retriesRemaining--;
-        Console.WriteLine("RETRY");
-        goto RETRY;
-    }
-    throw;
-}
+    MaxTokens = 1024,
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }],
+    Model = "claude-3-opus-20240229"
+}, new()
+{
+    Timeout = TimeSpan.FromSeconds(5)
+});
