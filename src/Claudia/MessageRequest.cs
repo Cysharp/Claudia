@@ -54,7 +54,8 @@ public class MessageRequest
     /// Whether to incrementally stream the response using server-sent events.
     /// </summary>
     [JsonPropertyName("stream")]
-    public bool? Stream { get; init; }
+    [JsonInclude] // internal so requires Include.
+    internal bool? Stream { get; set; }
 
     /// <summary>
     /// Amount of randomness injected into the response.
@@ -116,7 +117,7 @@ public class Contents : Collection<Content>
 public record class Content
 {
     [JsonPropertyName("type")]
-    public required string? Type { get; init; }
+    public required string Type { get; init; }
 
     // Text or Source
 

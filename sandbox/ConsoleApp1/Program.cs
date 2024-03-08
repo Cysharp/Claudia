@@ -1,22 +1,51 @@
 ﻿using Claudia;
 using System.Threading;
 using System;
+using R3;
 
 
 
 
-
+// Streaming Responses
 var anthropic = new Anthropic();
 
-var msg = await anthropic.Messages.CreateAsync(new()
+var msg = anthropic.Messages.CreateStreamAsync(new()
 {
     Model = Models.Claude3Opus,
     MaxTokens = 1024,
-    // Temperature = 1.0,
-    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+    Messages = [new() { Role = "user", Content = "Hello, Claude." }]
 });
 
-Console.WriteLine(msg);
+await foreach (var item in msg)
+{
+    Console.WriteLine(item.Type);
+}
+
+await msg.ToObservable()
+    .OfType<IMessageStreamEvent, ContentBlockDelta>()
+    .Where(x => x.Delta.Text != null)
+    .ForEachAsync(x =>
+    {
+        Console.WriteLine(x.Delta.Text);
+    });
+
+
+// Counting Tokens
+//var anthropic = new Anthropic();
+
+//var msg = await anthropic.Messages.CreateAsync(new()
+//{
+//    Model = Models.Claude3Opus,
+//    MaxTokens = 1024,
+//    Messages = [new() { Role = "user", Content = "Hello, Claude." }]
+//});
+
+//// Usage { InputTokens = 11, OutputTokens = 18 }
+//Console.WriteLine(msg.Usage);
+
+
+
+//Messages = [new() { Role = "user", Content = "Hello, Claude. Responses, please break line after each word." }]
 
 
 //// error

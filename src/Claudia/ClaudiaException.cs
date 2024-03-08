@@ -57,6 +57,21 @@ internal record class ErrorResponse
     [JsonPropertyName("message")]
     public required string Message { get; init; }
 
+    public ErrorCode ToErrorCode()
+    {
+        switch (Type)
+        {
+            case "invalid_request_error": return ErrorCode.InvalidRequestError;
+            case "authentication_error": return ErrorCode.AuthenticationError;
+            case "permission_error": return ErrorCode.PermissionError;
+            case "not_found_error": return ErrorCode.NotFoundError;
+            case "rate_limit_error": return ErrorCode.RateLimitError;
+            case "api_error": return ErrorCode.ApiError;
+            case "overloaded_error": return ErrorCode.OverloadedError;
+            default: return (ErrorCode)0;
+        }
+    }
+
     public override string ToString()
     {
         return $"{Type}: {Message}";

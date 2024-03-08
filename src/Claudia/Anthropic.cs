@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -9,6 +10,7 @@ namespace Claudia;
 public interface IMessages
 {
     Task<MessagesResponse> CreateAsync(MessageRequest request, RequestOptions? overrideOptions = null, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<IMessageStreamEvent> CreateStreamAsync(MessageRequest request, RequestOptions? overrideOptions = null, CancellationToken cancellationToken = default);
 }
 
 public class RequestOptions
@@ -43,16 +45,45 @@ public class Anthropic : IMessages, IDisposable
     public IMessages Messages => this;
 
     public Anthropic()
-    : this(new HttpClient())
+    : this(new HttpClientHandler(), true)
     {
     }
 
-    public Anthropic(HttpClient httpClient)
+    public Anthropic(HttpMessageHandler handler)
+        : this(handler, true)
     {
-        this.httpClient = httpClient;
+    }
+
+    public Anthropic(HttpMessageHandler handler, bool disposeHandler)
+    {
+        this.httpClient = new HttpClient(handler, disposeHandler);
+        this.httpClient.Timeout = System.Threading.Timeout.InfiniteTimeSpan; // ignore use Timeout, control manually because requires override Timeout option per request.
     }
 
     async Task<MessagesResponse> IMessages.CreateAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
+    {
+        request.Stream = null;
+        var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
+        var result = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
+        return result!;
+    }
+
+    async IAsyncEnumerable<IMessageStreamEvent> IMessages.CreateStreamAsync(MessageRequest request, RequestOptions? overrideOptions, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        request.Stream = true;
+        var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
+
+        using var stream = await msg.Content.ReadAsStreamAsync().ConfigureAwait(false);
+
+        var reader = new StreamMessageReader(stream);
+
+        await foreach (var item in reader.ReadMessagesAsync(cancellationToken))
+        {
+            yield return item;
+        }
+    }
+
+    async Task<HttpResponseMessage> SendRequestAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(request, DefaultJsonSerializerOptions);
 
@@ -62,16 +93,16 @@ public class Anthropic : IMessages, IDisposable
         message.Headers.Add("Accept", "application/json");
         message.Content = new ByteArrayContent(bytes);
 
-        var msg = await RequestWithCancelAsync((httpClient, message), cancellationToken, overrideOptions, static (x, ct) => x.httpClient.SendAsync(x.message, ct)).ConfigureAwait(false);
+        // use ResponseHeadersRead to ignore buffering response.
+        var msg = await RequestWithCancelAsync((httpClient, message), cancellationToken, overrideOptions, true, static (x, ct) => x.httpClient.SendAsync(x.message, HttpCompletionOption.ResponseHeadersRead, ct)).ConfigureAwait(false);
         var statusCode = (int)msg.StatusCode;
 
         switch (statusCode)
         {
             case 200:
-                var result = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
-                return result!;
+                return msg;
             default:
-                var shape = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
+                var shape = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(DefaultJsonSerializerOptions, ct)).ConfigureAwait(false);
 
                 var error = shape!.ErrorResponse;
                 var errorMsg = error.Message;
@@ -84,9 +115,9 @@ public class Anthropic : IMessages, IDisposable
         }
     }
 
-    async Task<TResult> RequestWithCancelAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, Func<TState, CancellationToken, Task<TResult>> func)
+    async Task<TResult> RequestWithCancelAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, bool doRetry, Func<TState, CancellationToken, Task<TResult>> func)
     {
-        var retriesRemaining = overrideOptions?.MaxRetries ?? MaxRetries;
+        var retriesRemaining = !doRetry ? 0 : overrideOptions?.MaxRetries ?? MaxRetries;
         var timeout = overrideOptions?.Timeout ?? Timeout;
     RETRY:
         using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
