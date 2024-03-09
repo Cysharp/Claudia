@@ -3,52 +3,42 @@ using R3;
 
 var anthropic = new Anthropic();
 
-// IAsyncEnumerable<IMessageStreamEvent>
-var stream = anthropic.Messages.CreateStreamAsync(new()
+
+// Default Headers:
+await anthropic.Messages.CreateAsync(new()
 {
-    Model = "claude-3-opus-20240229",
     MaxTokens = 1024,
-    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }],
+    Model = "claude-3-opus-20240229"
+}, new()
+{
+    Headers = new() { { "anthropic-version", "My-Custom-Value" } }
 });
 
-// Sum Usage
-var totalUsage = await stream.ToObservable()
-    .Where(x => x is MessageStart or MessageDelta)
-    .Select(x => x switch
-    {
-        MessageStart ms => ms.Message.Usage,
-        MessageDelta delta => delta.Usage,
-        _ => throw new ArgumentException()
-    })
-    .AggregateAsync((x, y) => new Usage { InputTokens = x.InputTokens + y.InputTokens, OutputTokens = x.OutputTokens + y.OutputTokens });
-
-Console.WriteLine(totalUsage);
 
 
+//// convert to array.
+//var array = await stream.ToObservable().ToArrayAsync();
 
+//// filterling and execute.
+//await stream.ToObservable()
+//    .OfType<IMessageStreamEvent, ContentBlockDelta>()
+//    .Where(x => x.Delta.Text != null)
+//    .ForEachAsync(x =>
+//    {
+//        Console.WriteLine(x.Delta.Text);
+//    });
 
-// convert to array.
-var array = await stream.ToObservable().ToArrayAsync();
+//// branching query
+//var branch = stream.ToObservable().Publish();
 
-// filterling and execute.
-await stream.ToObservable()
-    .OfType<IMessageStreamEvent, ContentBlockDelta>()
-    .Where(x => x.Delta.Text != null)
-    .ForEachAsync(x =>
-    {
-        Console.WriteLine(x.Delta.Text);
-    });
+//var messageStartTask = branch.OfType<IMessageStreamEvent, MessageStart>().FirstAsync();
+//var messageDeltaTask = branch.OfType<IMessageStreamEvent, MessageDelta>().FirstAsync();
 
-// branching query
-var branch = stream.ToObservable().Publish();
+//branch.Connect(); // start consume stream
 
-var messageStartTask = branch.OfType<IMessageStreamEvent, MessageStart>().FirstAsync();
-var messageDeltaTask = branch.OfType<IMessageStreamEvent, MessageDelta>().FirstAsync();
-
-branch.Connect(); // start consume stream
-
-Console.WriteLine((await messageStartTask));
-Console.WriteLine((await messageDeltaTask));
+//Console.WriteLine((await messageStartTask));
+//Console.WriteLine((await messageDeltaTask));
 
 
 

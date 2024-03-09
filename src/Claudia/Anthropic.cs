@@ -17,6 +17,7 @@ public class RequestOptions
     public TimeSpan? Timeout { get; set; }
 
     public int? MaxRetries { get; set; }
+    public Dictionary<string, string>? Headers { get; set; }
 }
 
 public class Anthropic : IMessages, IDisposable
@@ -59,7 +60,8 @@ public class Anthropic : IMessages, IDisposable
     async Task<MessagesResponse> IMessages.CreateAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
     {
         request.Stream = null;
-        var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
+        using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
+        
         var result = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(AnthropicJsonSerialzierContext.Default.Options, ct)).ConfigureAwait(false);
         return result!;
     }
@@ -67,7 +69,7 @@ public class Anthropic : IMessages, IDisposable
     async IAsyncEnumerable<IMessageStreamEvent> IMessages.CreateStreamAsync(MessageRequest request, RequestOptions? overrideOptions, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         request.Stream = true;
-        var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
+        using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
 
         using var stream = await msg.Content.ReadAsStreamAsync().ConfigureAwait(false);
 
@@ -87,6 +89,16 @@ public class Anthropic : IMessages, IDisposable
         message.Headers.Add("x-api-key", ApiKey);
         message.Headers.Add("anthropic-version", "2023-06-01");
         message.Headers.Add("Accept", "application/json");
+
+        if (overrideOptions?.Headers != null)
+        {
+            foreach (var item in overrideOptions.Headers)
+            {
+                message.Headers.Remove(item.Key);
+                message.Headers.Add(item.Key, item.Value);
+            }
+        }
+
         message.Content = new ByteArrayContent(bytes);
 
         // use ResponseHeadersRead to ignore buffering response.
