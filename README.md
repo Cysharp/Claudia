@@ -35,7 +35,113 @@ Console.WriteLine(message);
 
 Streaming Messages
 ---
-Coming Soon.
+We provide support for streaming responses using Server Sent Events (SSE).
+
+```csharp
+using Claudia;
+
+var anthropic = new Anthropic();
+
+var stream = anthropic.Messages.CreateStreamAsync(new()
+{
+    Model = "claude-3-opus-20240229",
+    MaxTokens = 1024,
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+});
+
+await foreach (var messageStreamEvent in stream)
+{
+    Console.WriteLine(messageStreamEvent);
+}
+```
+
+If you need to cancel a stream, you can pass the `CancellationToken` to `CreateStreamAsync`.
+
+Types of MessageStreamEvents are here [IMessageStreamEvent](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/IMessageStreamEvent.cs).
+
+For example, outputs the text results.
+
+```csharp
+await foreach (var messageStreamEvent in stream)
+{
+    if (messageStreamEvent is ContentBlockDelta content)
+    {
+        Console.WriteLine(content.Delta.Text);
+    }
+}
+```
+
+Request & Response types
+---
+This library includes C# definitions for all request params and response fields. You may import and use them like so:
+
+```csharp
+using Claudia;
+
+var request = new MessageRequest()
+{
+    Model = Models.Claude3Opus,
+    MaxTokens = 1024,
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+};
+```
+
+Documentation for each method, request param, and response field are available in docstrings and will appear on hover in most modern editors.
+
+All of MessageRequest definitions are here [MessageRequest.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/MessageRequest.cs) and MessageResponse definitions are here [MessageResponse.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/MessagesResponse.cs).
+
+Counting Tokens
+---
+You can see the exact usage for a given request through the usage response property, e.g.
+
+```csharp
+var message = await anthropic.Messages.CreateAsync(...)
+
+// Usage { InputTokens = 11, OutputTokens = 18 }
+Console.WriteLine(message.Usage);
+```
+
+Streaming Helpers
+---
+By integrating with [R3](https://github.com/Cysharp/R3), the new Reactive Extensions library, it becomes possible to handle Streaming Events in various ways.
+
+```csharp
+// convert to array.
+var array = await stream.ToObservable().ToArrayAsync();
+
+// filterling and execute.
+await stream.ToObservable()
+    .OfType<IMessageStreamEvent, ContentBlockDelta>()
+    .Where(x => x.Delta.Text != null)
+    .ForEachAsync(x =>
+    {
+        Console.WriteLine(x.Delta.Text);
+    });
+
+// branching query
+var branch = stream.ToObservable().Publish();
+
+var messageStartTask = branch.OfType<IMessageStreamEvent, MessageStart>().FirstAsync();
+var messageDeltaTask = branch.OfType<IMessageStreamEvent, MessageDelta>().FirstAsync();
+
+branch.Connect(); // start consume stream
+
+Console.WriteLine((await messageStartTask));
+Console.WriteLine((await messageDeltaTask));
+
+// Sum Usage
+var totalUsage = await stream.ToObservable()
+    .Where(x => x is MessageStart or MessageDelta)
+    .Select(x => x switch
+    {
+        MessageStart ms => ms.Message.Usage,
+        MessageDelta delta => delta.Usage,
+        _ => throw new ArgumentException()
+    })
+    .AggregateAsync((x, y) => new Usage { InputTokens = x.InputTokens + y.InputTokens, OutputTokens = x.OutputTokens + y.OutputTokens });
+
+Console.WriteLine(totalUsage);
+```
 
 Handling errors
 ---
@@ -132,6 +238,26 @@ await anthropic.Messages.CreateAsync(new()
 On timeout, an `TimeoutException` is thrown.
 
 Note that requests which time out will be [retried twice by default](#retries).
+
+Default Headers
+---
+TODO:
+
+Advanced Usage
+---
+TODO:
+
+### Accessing raw Response data (e.g., headers)
+
+
+Customizing the HttpClient
+---
+TODO:
+
+
+Configuring an HTTP(S) Agent (e.g., for proxies)
+---
+TODO:
 
 License
 ---

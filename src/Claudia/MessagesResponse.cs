@@ -75,12 +75,12 @@ public record class Usage
     /// The number of input tokens which were used.
     /// </summary>
     [JsonPropertyName("input_tokens")]
-    public required int InputTokens { get; init; }
+    public int InputTokens { get; init; }
 
     /// <summary>
     /// The number of output tokens which were used.
     /// </summary>
     [JsonPropertyName("output_tokens")]
-    public required int OutputTokens { get; init; }
+    public int OutputTokens { get; init; }
 }
 
