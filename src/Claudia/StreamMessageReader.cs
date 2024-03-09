@@ -2,9 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Claudia;
 
@@ -39,7 +37,7 @@ internal class StreamMessageReader
                 }
             }
 
-            reader.AdvanceTo(buffer.Start, buffer.End);
+            reader.AdvanceTo(buffer.Start, buffer.End); // examined is important
             goto READ_AGAIN;
         }
     }

@@ -1,7 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Claudia;
 
@@ -22,8 +21,11 @@ public class RequestOptions
 
 public class Anthropic : IMessages, IDisposable
 {
-    readonly HttpClient httpClient;
+#if NETSTANDARD2_1
     readonly Random random = new Random();
+#endif
+
+    readonly HttpClient httpClient;
 
     public string ApiKey { get; init; } = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY") ?? "";
 
@@ -142,7 +144,12 @@ public class Anthropic : IMessages, IDisposable
             {
                 if (retriesRemaining > 0)
                 {
-                    var sleep = CalculateDefaultRetryTimeoutMillis(random, retriesRemaining, MaxRetries);
+#if NETSTANDARD2_1
+                    var rand = random;
+#else
+                    var rand = Random.Shared;
+#endif
+                    var sleep = CalculateDefaultRetryTimeoutMillis(rand, retriesRemaining, MaxRetries);
                     await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
                     retriesRemaining--;
                     goto RETRY;

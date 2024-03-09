@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="BlazorApp1.styles.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+
+    @*Using latest tailwind?*@
+    <script src="https://cdn.tailwindcss.com/3.0.18"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        clifford: '#da373d',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com/3.0.18?plugins=forms@0.4.0,typography@0.5.1,aspect-ratio@0.4.0,line-clamp@0.3.1"></script>
+    <HeadOutlet />
+</head>
+
+<body class="bg-gray-100 h-screen flex flex-col">
+    <Routes />
+    <script src="_framework/blazor.web.js"></script>
+</body>
+
+</html>

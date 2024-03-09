@@ -2,6 +2,8 @@
 
 namespace Claudia;
 
+// WhenWritingNull doesn't affect Nullable<T>
+// so annnotate [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] to each fields
 [JsonSourceGenerationOptions(
     GenerationMode = JsonSourceGenerationMode.Default,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
