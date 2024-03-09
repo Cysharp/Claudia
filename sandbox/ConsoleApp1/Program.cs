@@ -15,7 +15,7 @@ var stream = anthropic.Messages.CreateStreamAsync(new()
 {
     Model = Models.Claude3Opus,
     MaxTokens = 1024,
-    Messages = [new() { Role = "user", Content = "Hello, Claude." }]
+    Messages = [new() { Role = "user", Content = "Hello, Claude. Please insert new line after each words." }]
 });
 
 await foreach (var messageEvent in stream)

@@ -33,9 +33,13 @@ internal class StreamMessageReader
             while (TryReadData(ref buffer, out var streamEvent))
             {
                 yield return streamEvent;
+                if (streamEvent.TypeKind == MessageStreamEventKind.MessageStop)
+                {
+                    yield break;
+                }
             }
 
-            reader.AdvanceTo(buffer.Start);
+            reader.AdvanceTo(buffer.Start, buffer.End);
             goto READ_AGAIN;
         }
     }
@@ -46,7 +50,7 @@ internal class StreamMessageReader
         var reader = new SequenceReader<byte>(buffer);
         Span<byte> tempBytes = stackalloc byte[64]; // alloc temp
 
-        while (reader.TryReadTo(out ReadOnlySequence<byte> line, (byte)'\n', (byte)'\\', advancePastDelimiter: true))
+        while (reader.TryReadTo(out ReadOnlySequence<byte> line, (byte)'\n', advancePastDelimiter: true))
         {
             // line is these kinds
             // event: event_name

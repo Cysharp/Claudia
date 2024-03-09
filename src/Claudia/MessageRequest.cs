@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 namespace Claudia;
 
 // https://docs.anthropic.com/claude/reference/messages_post
-public class MessageRequest
+public record class MessageRequest
 {
     /// <summary>
     /// The model that will complete your prompt.
@@ -89,7 +89,7 @@ public class MessageRequest
         return JsonSerializer.Serialize(this, AnthropicJsonSerialzierContext.Default.Options);
     }
 }
-public class Message
+public record class Message
 {
     /// <summary>
     /// user or assistant.
