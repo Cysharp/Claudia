@@ -4,16 +4,17 @@ using R3;
 var anthropic = new Anthropic();
 
 
-// Default Headers:
-await anthropic.Messages.CreateAsync(new()
+anthropic.HttpClient.BaseAddress = new Uri("http://myproxy/v25");
+
+var txt = await anthropic.Messages.CreateAsync(new()
 {
     MaxTokens = 1024,
     Messages = [new() { Role = "user", Content = "Hello, Claude" }],
     Model = "claude-3-opus-20240229"
-}, new()
-{
-    Headers = new() { { "anthropic-version", "My-Custom-Value" } }
 });
+
+Console.WriteLine(txt);
+
 
 
 

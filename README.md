@@ -241,21 +241,71 @@ Note that requests which time out will be [retried twice by default](#retries).
 
 Default Headers
 ---
-TODO:
+We automatically send the `anthropic-version` header set to `2023-06-01`.
 
-Advanced Usage
----
-TODO:
+If you need to, you can override it by setting default headers on a per-request basis.
 
-### Accessing raw Response data (e.g., headers)
+Be aware that doing so may result in incorrect types and other unexpected or undefined behavior in the SDK.
 
+```csharp
+await anthropic.Messages.CreateAsync(new()
+{
+    MaxTokens = 1024,
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }],
+    Model = "claude-3-opus-20240229"
+}, new()
+{
+    Headers = new() { { "anthropic-version", "My-Custom-Value" } }
+});
+```
 
 Customizing the HttpClient
 ---
-TODO:
+The Anthropic client uses a standard HttpClient by default for communication. If you want to customize the behavior of the HttpClient, pass an HttpMessageHandler. Additionally, if you don't want to dispose the HttpClient when disposing the Anthropic client, you can set the disposeHandler flag to false.
 
+```csharp
+public class Anthropic : IDisposable
+{
+    public HttpClient HttpClient => httpClient;
 
-Configuring an HTTP(S) Agent (e.g., for proxies)
+    public Anthropic()
+        : this(new HttpClientHandler(), true)
+    {
+    }
+
+    public Anthropic(HttpMessageHandler handler)
+        : this(handler, true)
+    {
+    }
+
+    public Anthropic(HttpMessageHandler handler, bool disposeHandler)
+    {
+        this.httpClient = new HttpClient(handler, disposeHandler);
+        this.httpClient.Timeout = System.Threading.Timeout.InfiniteTimeSpan; // Timeout is ignored, Anthropic client uses timeout settings from Timeout(or override per request) property
+    }
+
+    public void Dispose()
+    {
+        httpClient.Dispose();
+    }
+}
+```
+
+Furthermore, you can retrieve the `HttpClient` used for requests via the `HttpClient` property. This allows you to modify settings such as `DefaultRequestHeaders`.
+
+```csharp
+// disable keep-alive
+anthropic.HttpClient.DefaultRequestHeaders.ConnectionClose = true;
+```
+
+You can change the `HttpClient.BaseAddress` to change the API address(e.g., for proxies).
+
+```csharp
+// request to http://myproxy/messages instead of https://api.anthropic.com/v1/messages
+anthropic.HttpClient.BaseAddress = new Uri("http://myproxy/");
+```
+
+Blazor Sample
 ---
 TODO:
 

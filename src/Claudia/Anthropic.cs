@@ -34,6 +34,8 @@ public class Anthropic : IMessages, IDisposable
 
     public int MaxRetries { get; init; } = 2;
 
+    public HttpClient HttpClient => httpClient;
+
     /// <summary>
     /// Create a Message.
     /// Send a structured list of input messages with text and/or image content, and the model will generate the next message in the conversation.
@@ -42,7 +44,7 @@ public class Anthropic : IMessages, IDisposable
     public IMessages Messages => this;
 
     public Anthropic()
-    : this(new HttpClientHandler(), true)
+        : this(new HttpClientHandler(), true)
     {
     }
 
@@ -61,7 +63,7 @@ public class Anthropic : IMessages, IDisposable
     {
         request.Stream = null;
         using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
-        
+
         var result = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(AnthropicJsonSerialzierContext.Default.Options, ct)).ConfigureAwait(false);
         return result!;
     }
@@ -85,24 +87,36 @@ public class Anthropic : IMessages, IDisposable
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(request, AnthropicJsonSerialzierContext.Default.Options);
 
-        var message = new HttpRequestMessage(HttpMethod.Post, ApiEndpoints.Messages);
-        message.Headers.Add("x-api-key", ApiKey);
-        message.Headers.Add("anthropic-version", "2023-06-01");
-        message.Headers.Add("Accept", "application/json");
-
-        if (overrideOptions?.Headers != null)
+        Uri requestUri = ApiEndpoints.Messages;
+        if (HttpClient.BaseAddress != null)
         {
-            foreach (var item in overrideOptions.Headers)
-            {
-                message.Headers.Remove(item.Key);
-                message.Headers.Add(item.Key, item.Value);
-            }
+            requestUri = new Uri("messages", UriKind.Relative);
         }
 
-        message.Content = new ByteArrayContent(bytes);
-
         // use ResponseHeadersRead to ignore buffering response.
-        var msg = await RequestWithCancelAsync((httpClient, message), cancellationToken, overrideOptions, true, static (x, ct) => x.httpClient.SendAsync(x.message, HttpCompletionOption.ResponseHeadersRead, ct)).ConfigureAwait(false);
+        var msg = await RequestWithCancelAsync((httpClient, (bytes, requestUri, overrideOptions, ApiKey)), cancellationToken, overrideOptions, true, static (x, ct) =>
+        {
+            // for retry, create new HttpRequestMessage per request.
+            var state = x.Item2;
+
+            var message = new HttpRequestMessage(HttpMethod.Post, state.requestUri);
+            message.Headers.Add("x-api-key", state.ApiKey);
+            message.Headers.Add("anthropic-version", "2023-06-01");
+            message.Headers.Add("Accept", "application/json");
+
+            if (state.overrideOptions?.Headers != null)
+            {
+                foreach (var item in state.overrideOptions.Headers)
+                {
+                    message.Headers.Remove(item.Key);
+                    message.Headers.Add(item.Key, item.Value);
+                }
+            }
+
+            message.Content = new ByteArrayContent(state.bytes);
+            return x.httpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, ct);
+        }).ConfigureAwait(false);
+
         var statusCode = (int)msg.StatusCode;
 
         switch (statusCode)
