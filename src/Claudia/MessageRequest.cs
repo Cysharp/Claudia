@@ -11,7 +11,7 @@ public record class MessageRequest
     /// The model that will complete your prompt.
     /// </summary>
     [JsonPropertyName("model")]
-    public required string Model { get; init; }
+    public required string Model { get; set; }
 
     /// <summary>
     /// The maximum number of tokens to generate before stopping.
@@ -19,13 +19,13 @@ public record class MessageRequest
     /// Different models have different maximum values for this parameter
     /// </summary>
     [JsonPropertyName("max_tokens")]
-    public required int MaxTokens { get; init; }
+    public required int MaxTokens { get; set; }
 
     /// <summary>
     /// Input messages.
     /// </summary>
     [JsonPropertyName("messages")]
-    public required Message[] Messages { get; init; }
+    public required Message[] Messages { get; set; }
 
     // optional parameters
 
@@ -34,13 +34,13 @@ public record class MessageRequest
     /// A system prompt is a way of providing context and instructions to Claude, such as specifying a particular goal or role.
     /// </summary>
     [JsonPropertyName("system")]
-    public string? System { get; init; }
+    public string? System { get; set; }
 
     /// <summary>
     /// An object describing metadata about the request.
     /// </summary>
     [JsonPropertyName("metadata")]
-    public Metadata? Metadata { get; init; }
+    public Metadata? Metadata { get; set; }
 
     /// <summary>
     /// Custom text sequences that will cause the model to stop generating.
@@ -48,7 +48,7 @@ public record class MessageRequest
     /// If you want the model to stop generating when it encounters custom strings of text, you can use the stop_sequences parameter.If the model encounters one of the custom sequences, the response stop_reason value will be "stop_sequence" and the response stop_sequence value will contain the matched stop sequence.
     /// </summary>
     [JsonPropertyName("stop_sequences")]
-    public string[]? StopSequences { get; init; }
+    public string[]? StopSequences { get; set; }
 
     /// <summary>
     /// Whether to incrementally stream the response using server-sent events.
@@ -64,7 +64,7 @@ public record class MessageRequest
     /// </summary>
     [JsonPropertyName("temperature")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public double? Temperature { get; init; }
+    public double? Temperature { get; set; }
 
     /// <summary>
     /// Use nucleus sampling.
@@ -73,7 +73,7 @@ public record class MessageRequest
     /// </summary>
     [JsonPropertyName("top_p")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public double? TopP { get; init; }
+    public double? TopP { get; set; }
 
     /// <summary>
     /// Only sample from the top K options for each subsequent token.
@@ -82,7 +82,7 @@ public record class MessageRequest
     /// </summary>
     [JsonPropertyName("top_k")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public double? TopK { get; init; }
+    public double? TopK { get; set; }
 
     public override string ToString()
     {
@@ -95,13 +95,13 @@ public record class Message
     /// user or assistant.
     /// </summary>
     [JsonPropertyName("role")]
-    public required string Role { get; init; }
+    public required string Role { get; set; }
 
     /// <summary>
     /// single string or an array of content blocks.
     /// </summary>
     [JsonPropertyName("content")]
-    public required Contents Content { get; init; }
+    public required Contents Content { get; set; }
 }
 
 public class Contents : Collection<Content>
@@ -120,15 +120,15 @@ public class Contents : Collection<Content>
 public record class Content
 {
     [JsonPropertyName("type")]
-    public required string Type { get; init; }
+    public required string Type { get; set; }
 
     // Text or Source
 
     [JsonPropertyName("text")]
-    public string? Text { get; init; }
+    public string? Text { get; set; }
 
     [JsonPropertyName("source")]
-    public string? Source { get; init; }
+    public string? Source { get; set; }
 
     public static implicit operator Content(string text) => new Content
     {
@@ -144,7 +144,7 @@ public record class Metadata
     /// This should be a uuid, hash value, or other opaque identifier.Anthropic may use this id to help detect abuse. Do not include any identifying information such as name, email address, or phone number.
     /// </summary>
     [JsonPropertyName("user_id")]
-    public required string UserId { get; init; }
+    public required string UserId { get; set; }
 }
 
 public record class Source
@@ -153,14 +153,14 @@ public record class Source
     /// We currently support the base64 source type for images.
     /// </summary>
     [JsonPropertyName("type")]
-    public string Type { get; init; } = "base64";
+    public string Type { get; set; } = "base64";
 
     /// <summary>
     /// We currently support the base64 source the image/jpeg, image/png, image/gif, and image/webp media types.
     /// </summary>
     [JsonPropertyName("image/jpeg")]
-    public required string MediaType { get; init; }
+    public required string MediaType { get; set; }
 
     [JsonPropertyName("data")]
-    public required byte[] Data { get; init; } // Base64
+    public required byte[] Data { get; set; } // Base64
 }

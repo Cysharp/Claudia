@@ -102,45 +102,45 @@ public record class ContentBlockStop : IMessageStreamEvent
 public record class MessageStartBody
 {
     [JsonPropertyName("id")]
-    public required string Id { get; init; }
+    public required string Id { get; set; }
 
     /// <summary>
     /// Object type.
     /// For Messages, this is always "message".
     /// </summary>
     [JsonPropertyName("type")]
-    public required string Type { get; init; }
+    public required string Type { get; set; }
 
     /// <summary>
     /// Conversational role of the generated message.
     /// This will always be "assistant".
     /// </summary>
     [JsonPropertyName("role")]
-    public required string Role { get; init; }
+    public required string Role { get; set; }
 
     /// <summary>
     /// The model that handled the request.
     /// </summary>
     [JsonPropertyName("model")]
-    public required string Model { get; init; }
+    public required string Model { get; set; }
 
     /// <summary>
     /// The reason that we stopped.
     /// </summary>
     [JsonPropertyName("stop_reason")]
-    public required string StopReason { get; init; }
+    public required string StopReason { get; set; }
 
     /// <summary>
     /// Which custom stop sequence was generated, if any.
     /// </summary>
     [JsonPropertyName("stop_sequence")]
-    public required string? StopSequence { get; init; }
+    public required string? StopSequence { get; set; }
 
     /// <summary>
     /// Billing and rate-limit usage.
     /// </summary>
     [JsonPropertyName("usage")]
-    public required Usage Usage { get; init; }
+    public required Usage Usage { get; set; }
 }
 
 public record class MessageDeltaBody
