@@ -90,6 +90,8 @@ Documentation for each method, request param, and response field are available i
 
 All of MessageRequest definitions are here [MessageRequest.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/MessageRequest.cs) and MessageResponse definitions are here [MessageResponse.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/MessagesResponse.cs).
 
+Also, commonly used constants are defined. For example, `Models.Claude3Opus` is `claude-3-opus-20240229`, and constants like `Roles.User` and `Roles.Assistant` are used for roles like "user" and "assistant". Please refer to [Constant.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/Constant.cs) for all the constants. In addition, the [system prompt used in Claude's official chat UI](https://clutwitter.com/AmandaAskell/status/1765207842993434880) is defined as `SystemPrompts.Claude3`.
+
 Counting Tokens
 ---
 You can see the exact usage for a given request through the usage response property, e.g.
