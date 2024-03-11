@@ -1,22 +1,52 @@
 ﻿using Claudia;
 using R3;
 
+var imageBytes = File.ReadAllBytes(@"dish.jpg");
+
 var anthropic = new Anthropic();
 
-
-anthropic.HttpClient.BaseAddress = new Uri("http://myproxy/v25");
-
-var txt = await anthropic.Messages.CreateAsync(new()
+var message = await anthropic.Messages.CreateAsync(new()
 {
+    Model = "claude-3-opus-20240229",
     MaxTokens = 1024,
-    Messages = [new() { Role = "user", Content = "Hello, Claude" }],
-    Model = "claude-3-opus-20240229"
+    Messages = [new()
+    {
+        Role = "user",
+        Content = [
+            new()
+            {
+                Type = "image",
+                Source = new()
+                {
+                    Type = "base64",
+                    MediaType = "image/jpeg",
+                    Data = imageBytes
+                }
+            },
+            new()
+            {
+                Type = "text",
+                Text = "Describe this image."
+            }
+        ]
+    }],
 });
+Console.WriteLine(message);
 
-Console.WriteLine(txt);
-
-
-
+var simple = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Opus,
+    MaxTokens = 1024,
+    Messages = [new()
+    {
+        Role = Roles.User,
+        Content = [
+            new(imageBytes, "image/jpeg"),
+            new("Describe this image.")
+        ]
+    }],
+});
+Console.WriteLine(simple);
 
 //// convert to array.
 //var array = await stream.ToObservable().ToArrayAsync();

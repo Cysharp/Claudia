@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Claudia;
 
@@ -55,6 +56,7 @@ public record class MessageRequest
     /// </summary>
     [JsonPropertyName("stream")]
     [JsonInclude] // internal so requires Include.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     internal bool? Stream { get; set; }
 
     /// <summary>
@@ -128,13 +130,32 @@ public record class Content
     public string? Text { get; set; }
 
     [JsonPropertyName("source")]
-    public string? Source { get; set; }
+    public Source? Source { get; set; }
 
-    public static implicit operator Content(string text) => new Content
+    public static implicit operator Content(string text) => new Content(text);
+
+    public Content()
     {
-        Type = ContentTypes.Text,
-        Text = text
-    };
+    }
+
+    [SetsRequiredMembers]
+    public Content(string text)
+    {
+        Type = ContentTypes.Text;
+        Text = text;
+    }
+
+    [SetsRequiredMembers]
+    public Content(ReadOnlyMemory<byte> data, string mediaType)
+    {
+        Type = ContentTypes.Image;
+        Source = new Source
+        {
+            Type = "base64",
+            MediaType = mediaType,
+            Data = data
+        };
+    }
 }
 
 public record class Metadata
@@ -158,9 +179,9 @@ public record class Source
     /// <summary>
     /// We currently support the base64 source the image/jpeg, image/png, image/gif, and image/webp media types.
     /// </summary>
-    [JsonPropertyName("image/jpeg")]
+    [JsonPropertyName("media_type")]
     public required string MediaType { get; set; }
 
     [JsonPropertyName("data")]
-    public required byte[] Data { get; set; } // Base64
+    public required ReadOnlyMemory<byte> Data { get; set; } // Base64
 }

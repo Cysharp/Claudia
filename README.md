@@ -307,6 +307,75 @@ You can change the `HttpClient.BaseAddress` to change the API address(e.g., for 
 anthropic.HttpClient.BaseAddress = new Uri("http://myproxy/");
 ```
 
+Upload File
+---
+`Message.Content` accepts multiple `Content` objects. However, if a single string is passed, it is automatically converted into an array of text.
+
+```csharp
+// this code
+Content = "Hello, Claude"
+// is convert to following
+Content = new Content
+{
+    Type = "text",
+    Text = "Hello, Claude"
+}
+```
+
+When passing an image, set both the image and Text in the Content. 
+
+```csharp
+var imageBytes = File.ReadAllBytes(@"dish.jpg");
+
+var anthropic = new Anthropic();
+var message = await anthropic.Messages.CreateAsync(new()
+{
+    Model = "claude-3-opus-20240229",
+    MaxTokens = 1024,
+    Messages = [new()
+    {
+        Role = "user",
+        Content = [
+            new()
+            {
+                Type = "image",
+                Source = new()
+                {
+                    Type = "base64",
+                    MediaType = "image/jpeg",
+                    Data = imageBytes
+                }
+            },
+            new()
+            {
+                Type = "text",
+                Text = "Describe this image."
+            }
+        ]
+    }],
+});
+Console.WriteLine(message);
+```
+
+The above code can be simplified. If a string is passed to the Content constructor, it is set as text, and if `ReadOnlyMemory<byte>` is passed, it is set as an image.
+
+```csharp
+var message = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Opus,
+    MaxTokens = 1024,
+    Messages = [new()
+    {
+        Role = Roles.User,
+        Content = [
+            new(imageBytes, "image/jpeg"),
+            new("Describe this image.")
+        ]
+    }],
+});
+Console.WriteLine(message);
+```
+
 Blazor Sample
 ---
 TODO:
