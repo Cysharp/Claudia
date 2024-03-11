@@ -42,7 +42,7 @@ var simple = await anthropic.Messages.CreateAsync(new()
         Role = Roles.User,
         Content = [
             new(imageBytes, "image/jpeg"),
-            new("Describe this image.")
+            "Describe this image."
         ]
     }],
 });
