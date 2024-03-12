@@ -6,14 +6,19 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="R3" Version="1.1.7" />
+		<PackageReference Include="R3" Version="1.1.7" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Claudia\Claudia.csproj" />
+		<ProjectReference Include="..\..\src\Claudia.FunctionGenerator\Claudia.FunctionGenerator.csproj">
+			<OutputItemType>Analyzer</OutputItemType>
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+		</ProjectReference>
 	</ItemGroup>
 
 </Project>

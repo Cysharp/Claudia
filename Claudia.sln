@@ -13,9 +13,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp1", "sandbox\Cons
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1B4BD6F6-8528-4409-BA55-085DA5486D36}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Claudia.Tests", "tests\Claudia.Tests\Claudia.Tests.csproj", "{B4A34AB7-FD1B-4CC4-9859-603D26D7D0A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Claudia.Tests", "tests\Claudia.Tests\Claudia.Tests.csproj", "{B4A34AB7-FD1B-4CC4-9859-603D26D7D0A4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorApp1", "sandbox\BlazorApp1\BlazorApp1.csproj", "{8EEB0F69-132B-4887-959D-25531588FCD2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorApp1", "sandbox\BlazorApp1\BlazorApp1.csproj", "{8EEB0F69-132B-4887-959D-25531588FCD2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Claudia.FunctionGenerator", "src\Claudia.FunctionGenerator\Claudia.FunctionGenerator.csproj", "{8C464111-AD67-4D2B-9AE2-0B52AB077EBD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{8EEB0F69-132B-4887-959D-25531588FCD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8EEB0F69-132B-4887-959D-25531588FCD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8EEB0F69-132B-4887-959D-25531588FCD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C464111-AD67-4D2B-9AE2-0B52AB077EBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C464111-AD67-4D2B-9AE2-0B52AB077EBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C464111-AD67-4D2B-9AE2-0B52AB077EBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C464111-AD67-4D2B-9AE2-0B52AB077EBD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,6 +54,7 @@ Global
 		{7D6C6A91-7B2E-4616-A40F-ACA1A0BDBEB4} = {E61BFC87-2B96-4699-9B69-EE4B008AE0A0}
 		{B4A34AB7-FD1B-4CC4-9859-603D26D7D0A4} = {1B4BD6F6-8528-4409-BA55-085DA5486D36}
 		{8EEB0F69-132B-4887-959D-25531588FCD2} = {E61BFC87-2B96-4699-9B69-EE4B008AE0A0}
+		{8C464111-AD67-4D2B-9AE2-0B52AB077EBD} = {B54A8855-F8F0-4015-80AA-86974E65AC2D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B7CEBA02-BB0C-4102-AE58-DFD114C3192A}
