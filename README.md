@@ -315,11 +315,11 @@ Upload File
 // this code
 Content = "Hello, Claude"
 // is convert to following
-Content = new Content
+Content = [new Content
 {
     Type = "text",
     Text = "Hello, Claude"
-}
+}]
 ```
 
 When passing an image, set both the image and Text in the Content. 
