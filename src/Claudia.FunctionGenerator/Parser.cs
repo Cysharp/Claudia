@@ -22,6 +22,7 @@ public class Parser
     internal ParseResult[] Parse()
     {
         var list = new List<ParseResult>();
+        var methods = new List<Method>();
 
         // grouping by type(TypeDeclarationSyntax)
         foreach (var item in sources.GroupBy(x => x.TargetNode.Parent))
@@ -57,6 +58,8 @@ public class Parser
 
             // TODO:verify documentation somment of summary.
 
+
+            methods.Clear();
             foreach (var source in item)
             {
                 // source.TargetNode
@@ -99,14 +102,15 @@ public class Parser
 
                 //logMethods.Add(methodDecl);
 
-                list.Add(new ParseResult
-                {
-                    TypeSyntax = targetType,
-                    TypeSymbol = symbol,
-                    MethodSyntax = (MethodDeclarationSyntax)source.TargetNode,
-                    MethodSymbol = method
-                });
+                methods.Add(new Method { Symbol = method, Syntax = (MethodDeclarationSyntax)source.TargetNode });
             }
+
+            list.Add(new ParseResult
+            {
+                TypeSyntax = targetType,
+                TypeSymbol = symbol,
+                Methods = methods.ToArray()
+            });
         }
 
         return list.ToArray();

@@ -1,5 +1,4 @@
-﻿using System.Linq.Expressions;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -9,7 +8,7 @@ namespace Claudia;
 
 public interface IMessages
 {
-    Task<MessagesResponse> CreateAsync(MessageRequest request, RequestOptions? overrideOptions = null, CancellationToken cancellationToken = default);
+    Task<MessageResponse> CreateAsync(MessageRequest request, RequestOptions? overrideOptions = null, CancellationToken cancellationToken = default);
     IAsyncEnumerable<IMessageStreamEvent> CreateStreamAsync(MessageRequest request, RequestOptions? overrideOptions = null, CancellationToken cancellationToken = default);
 }
 
@@ -62,12 +61,12 @@ public class Anthropic : IMessages, IDisposable
         this.httpClient.Timeout = System.Threading.Timeout.InfiniteTimeSpan; // ignore use Timeout, control manually because requires override Timeout option per request.
     }
 
-    async Task<MessagesResponse> IMessages.CreateAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
+    async Task<MessageResponse> IMessages.CreateAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
     {
         request.Stream = null;
         using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
 
-        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(false);
+        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<MessageResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(false);
         return result!;
     }
 
@@ -307,11 +306,6 @@ public class Anthropic : IMessages, IDisposable
     public void Dispose()
     {
         httpClient.Dispose();
-    }
-
-    static TimeSpan Normalize(TimeSpan timeSpan)
-    {
-        return timeSpan < TimeSpan.Zero ? TimeSpan.Zero : timeSpan;
     }
 
     static class ApiEndpoints

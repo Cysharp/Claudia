@@ -1,11 +1,51 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.Text;
 using System.Xml.Linq;
 
 namespace Claudia.FunctionGenerator;
 
 public class Emitter
 {
-    const string SystemPromptHead = """
+    SourceProductionContext context;
+    ParseResult[] result;
+    StringBuilder sb;
+
+    public Emitter(SourceProductionContext context, ParseResult[] result)
+    {
+        this.context = context;
+        this.result = result;
+        this.sb = new StringBuilder(1024);
+    }
+
+    internal void Emit()
+    {
+        // generate per class
+        foreach (var parseResult in result)
+        {
+            sb.Clear();
+
+            var keyword = parseResult.TypeSyntax.Keyword.ToString();
+            var typeName = parseResult.TypeSyntax.Identifier.ToString();
+            var staticKey = parseResult.TypeSyntax.Modifiers.Any(x => x.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)) ? "static " : "";
+
+            sb.AppendLine($"{staticKey}partial {keyword} {typeName}");
+            sb.AppendLine("{");
+            sb.AppendLine("");
+
+            EmitCore(parseResult);
+
+            sb.AppendLine("}");
+
+            AddSource(context, parseResult.TypeSymbol, sb.ToString());
+        }
+    }
+
+    void EmitCore(ParseResult parseResult)
+    {
+        var toolsAll = string.Join(Environment.NewLine, parseResult.Methods.Select(x => "{" + x.Name + "}"));
+
+        sb.AppendLine($$"""
+    public const string SystemPrompt = @$"
 In this environment you have access to a set of tools you can use to answer the user's question.
 
 You may call them like this:
@@ -18,70 +58,187 @@ You may call them like this:
         </parameters>
     </invoke>
 </function_calls>
-""";
 
-    private SourceProductionContext context;
-    private ParseResult[] result;
+Here are the tools available:
 
-    public Emitter(SourceProductionContext context, ParseResult[] result)
+{PromptXml.ToolsAll}
+";
+
+    public static class PromptXml
     {
-        this.context = context;
-        this.result = result;
-    }
+        public const string ToolsAll = @$"
+{{toolsAll}}
+";
 
-    internal void Emit()
-    {
-        foreach (var item in result.GroupBy(x => x.TypeSymbol, SymbolEqualityComparer.Default))
+""");
+
+        foreach (var method in parseResult.Methods)
         {
-            var type = item.Key!;
-
-            var tools = new List<XElement>();
-
-            foreach (var method in item)
-            {
-                var docComment = method.MethodSymbol.GetDocumentationCommentXml();
-                var xml = XElement.Parse(docComment);
-
-                var description = ((string)xml.Element("summary")).Trim();
-
-                var parameters = new List<XElement>();
-                foreach (var p in xml.Elements("param"))
-                {
-                    var paramDescription = ((string)p).Trim();
-
-                    // type retrieve from method symbol
-                    var name = p.Attribute("name").Value.Trim();
-                    var paramType = method.MethodSymbol.Parameters.First(x => x.Name == name).Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-
-                    parameters.Add(new XElement("parameter",
-                        new XElement("name", name),
-                        new XElement("type", paramType),
-                        new XElement("description", paramDescription)));
-                }
-
-                var tool = new XElement("tool_description",
-                    new XElement("tool_name", method.MethodSymbol.Name),
-                    new XElement("description", description),
-                    new XElement("parameters", parameters));
-
-                tools.Add(tool);
-            }
-
-            var finalXml = new XElement("tools", tools);
-
-
-
-
-
+            EmitToolDescription(method);
+            sb.AppendLine();
         }
 
+        sb.AppendLine();
+        sb.AppendLine("    }"); // close PromptXml
 
+        sb.AppendLine();
+        EmitInvoke(parseResult);
+    }
 
+    void EmitToolDescription(Method method)
+    {
+        var docComment = method.Symbol.GetDocumentationCommentXml();
+        var xml = XElement.Parse(docComment);
 
+        var description = ((string)xml.Element("summary")).Trim();
 
+        var parameters = new List<XElement>();
+        foreach (var p in xml.Elements("param"))
+        {
+            var paramDescription = ((string)p).Trim();
 
+            // type retrieve from method symbol
+            var name = p.Attribute("name").Value.Trim();
+            var paramType = method.Symbol.Parameters.First(x => x.Name == name).Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
+            parameters.Add(new XElement("parameter",
+                new XElement("name", name),
+                new XElement("type", paramType),
+                new XElement("description", paramDescription)));
+        }
 
+        var tool = new XElement("tool_description",
+            new XElement("tool_name", method.Name),
+            new XElement("description", description),
+            new XElement("parameters", parameters));
 
+        sb.AppendLine($$"""
+        public const string {{method.Name}} = @"
+{{tool.ToString()}}
+";
+""");
+    }
+
+    void EmitInvoke(ParseResult parseResult)
+    {
+        var parameterParseString = new StringBuilder();
+        foreach (var method in parseResult.Methods)
+        {
+            parameterParseString.AppendLine($"                case \"{method.Name}\":");
+            parameterParseString.AppendLine("                    {");
+            parameterParseString.AppendLine("                        var parameters = item.Element(\"parameters\")!;");
+            parameterParseString.AppendLine();
+            var i = 0;
+            var parameterNames = new StringBuilder();
+            foreach (var p in method.Symbol.Parameters)
+            {
+                parameterNames.Append((i != 0) ? $", _{i}" : $"_{i}");
+                parameterParseString.AppendLine($"                        var _{i++} = ({p.Type.ToDisplayString()})parameters.Element(\"{p.Name}\")!;");
+            }
+            parameterParseString.AppendLine();
+            parameterParseString.AppendLine($"                        BuildResult(sb, \"{method.Name}\", {method.Name}({parameterNames}));");
+            parameterParseString.AppendLine("                        break;");
+            parameterParseString.AppendLine("                    }");
+        }
+
+        var code = $$""""
+#pragma warning disable CS1998
+    public static async ValueTask<string?> InvokeAsync(MessageResponse message)
+    {
+        var text = message.Content[0].Text!;
+        var tagStart = text.IndexOf("<function_calls>");
+        if (tagStart == -1) return null;
+
+        var functionCalls = text.Substring(tagStart) + "</function_calls>";
+        var xmlResult = XElement.Parse(functionCalls);
+
+        var sb = new StringBuilder();
+        sb.AppendLine(functionCalls);
+        sb.AppendLine("<function_results>");
+
+        foreach (var item in xmlResult.Elements("invoke"))
+        {
+            var name = (string)item.Element("tool_name")!;
+            switch (name)
+            {
+{{parameterParseString}}
+                default:
+                    break;
+            }
+        }
+
+        sb.Append("</function_results>"); // final assistant content cannot end with trailing whitespace
+
+        return sb.ToString();
+
+        static void BuildResult<T>(StringBuilder sb, string toolName, T result)
+        {
+            sb.AppendLine(@$"
+    <result>
+        <tool_name>{toolName}</tool_name>
+        <stdout>
+            {result}
+        </stdout>
+    </result>
+");
+        }
+    }
+#pragma warning restore CS1998
+"""";
+
+        sb.AppendLine(code);
+    }
+
+    static void AddSource(SourceProductionContext context, ISymbol targetSymbol, string code, string fileExtension = ".g.cs")
+    {
+        var fullType = targetSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+          .Replace("global::", "")
+          .Replace("<", "_")
+          .Replace(">", "_");
+
+        var sb = new StringBuilder();
+
+        sb.AppendLine("""
+// <auto-generated/>
+#nullable enable
+#pragma warning disable CS0108
+#pragma warning disable CS0162
+#pragma warning disable CS0164
+#pragma warning disable CS0219
+#pragma warning disable CS8600
+#pragma warning disable CS8601
+#pragma warning disable CS8602
+#pragma warning disable CS8604
+#pragma warning disable CS8619
+#pragma warning disable CS8620
+#pragma warning disable CS8631
+#pragma warning disable CS8765
+#pragma warning disable CS9074
+#pragma warning disable CA1050
+
+using Claudia;
+using System;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Linq;
+""");
+
+        var ns = targetSymbol.ContainingNamespace;
+        if (!ns.IsGlobalNamespace)
+        {
+            sb.AppendLine($"namespace {ns} {{");
+        }
+        sb.AppendLine();
+
+        sb.AppendLine(code);
+
+        if (!ns.IsGlobalNamespace)
+        {
+            sb.AppendLine($"}}");
+        }
+
+        var sourceCode = sb.ToString();
+        context.AddSource($"{fullType}{fileExtension}", sourceCode);
     }
 }

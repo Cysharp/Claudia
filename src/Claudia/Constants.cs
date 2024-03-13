@@ -45,6 +45,12 @@ public static class ContentTypes
     public const string Image = "image";
 }
 
+public static class StopSequnces
+{
+    /// <summary>the model reached a natural stopping point</summary>
+    public const string CloseFunctionCalls = "</function_calls>";
+}
+
 public static class StopReasons
 {
     /// <summary>the model reached a natural stopping point</summary>

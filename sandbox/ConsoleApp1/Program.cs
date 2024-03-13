@@ -1,5 +1,8 @@
 ﻿using Claudia;
-using R3;
+using System;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 // function calling
@@ -7,118 +10,32 @@ using System.Xml.Linq;
 
 var anthropic = new Anthropic();
 
-var systemPrompt = """
-In this environment you have access to a set of tools you can use to answer the user's question.
+//var userInput = "Additive 1,984,135 and 9,343,116";
 
-You may call them like this:
-<function_calls>
-    <invoke>
-        <tool_name>$TOOL_NAME</tool_name>
-        <parameters>
-            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
-            ...
-        </parameters>
-    </invoke>
-</function_calls>
-
-Here are the tools available:
-<tools>
-    <tool_description>
-        <tool_name>DoPairwiseArithmetic</tool_name>
-        <description>
-            Calculator function for doing basic arithmetic. 
-            Supports addition, subtraction, multiplication
-        </description>
-        <parameters>
-            <parameter>
-                <name>first_operand</name>
-                <type>int</type>
-                <description>First operand (before the operator)</description>
-            </parameter>
-            <parameter>
-                <name>second_operand</name>
-                <type>int</type>
-                <description>Second operand (after the operator)</description>
-            </parameter>
-            <parameter>
-                <name>operator</name>
-                <type>str</type>
-                <description>The operation to perform. Must be either +, -, *, or /</description>
-            </parameter>
-        </parameters>
-    </tool_description>
-</tools>
-""";
-
-var userInput = "Multiply 1,984,135 by 9,343,116";
+var userInput = "東京の現在時間とイギリスの現在時間を教えてください。あとついでに1234+5899と 9999 - 3456を教えてください。";
 
 // Claude generate tool and parameters XML
 var message = await anthropic.Messages.CreateAsync(new()
 {
     Model = Models.Claude3Opus,
     MaxTokens = 1024,
-    System = systemPrompt,
-    StopSequences = ["</function_calls>"],
+    System = FunctionTools.SystemPrompt + ".複数の<invoke>がある場合は一つの<function_calls>の中にまとめてください。",
+    StopSequences = [StopSequnces.CloseFunctionCalls],
     Messages = [
         new() { Role = Roles.User, Content = userInput },
     ],
 });
 
-// Parse function_calls XML
-
-// Okay, let's break this down step-by-step:
-// <function_calls>
-//    <invoke>
-//        <tool_name>DoPairwiseArithmetic</tool_name>
-//        <parameters>
-//            <first_operand>1984135</first_operand>
-//            <second_operand>9343116</second_operand>
-//            <operator>*</operator>
-//        </parameters>
-//    </invoke>
-var text = message.Content[0].Text!;
-var tagStart = text.IndexOf("<function_calls>");
-var xmlResult = XElement.Parse(text.Substring(tagStart) + message.StopSequence);
-var parameters = xmlResult.Descendants("parameters").Elements();
-
-var first = (double)parameters.First(x => x.Name == "first_operand");
-var second = (double)parameters.First(x => x.Name == "second_operand");
-var operation = (string)parameters.First(x => x.Name == "operator");
-
-// Execute local function
-var result = DoPairwiseArithmetic(first, second, operation);
-
-// Setup result message in XML
-var partialAssistantMessage = $$"""
-<function_calls>
-    <invoke>
-        <tool_name>DoPairwiseArithmetic</tool_name>
-        <parameters>
-            <first_operand>{{first}}</first_operand>
-            <second_operand>{{second}}</second_operand>
-            <operator>{{operation}}</operator>
-        </parameters>
-    </invoke>
-</function_calls>
-
-<function_results>
-    <result>
-        <tool_name>DoPairwiseArithmetic</tool_name>
-        <stdout>
-            {{result}}
-        </stdout>
-    </result>
-</function_results>
-""";
+var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
 
 var callResult = await anthropic.Messages.CreateAsync(new()
 {
     Model = Models.Claude3Opus,
     MaxTokens = 1024,
-    System = systemPrompt,
+    System = FunctionTools.SystemPrompt,
     Messages = [
         new() { Role = Roles.User, Content = userInput },
-        new() { Role = Roles.Assistant, Content = partialAssistantMessage },
+        new() { Role = Roles.Assistant, Content = partialAssistantMessage! },
     ],
 });
 
@@ -126,17 +43,17 @@ var callResult = await anthropic.Messages.CreateAsync(new()
 // Therefore, 1,984,135 multiplied by 9,343,116 equals 18,538,003,464,660.
 Console.WriteLine(callResult);
 
-static double DoPairwiseArithmetic(double num1, double num2, string operation)
-{
-    return operation switch
-    {
-        "+" => num1 + num2,
-        "-" => num1 - num2,
-        "*" => num1 * num2,
-        "/" => num1 / num2,
-        _ => throw new ArgumentException("Operation not supported")
-    };
-}
+//static double DoPairwiseArithmetic(double num1, double num2, string operation)
+//{
+//    return operation switch
+//    {
+//        "+" => num1 + num2,
+//        "-" => num1 - num2,
+//        "*" => num1 * num2,
+//        "/" => num1 / num2,
+//        _ => throw new ArgumentException("Operation not supported")
+//    };
+//}
 
 
 
@@ -382,86 +299,49 @@ static double DoPairwiseArithmetic(double num1, double num2, string operation)
 //});
 
 
-/// <summary>
-/// AIUEO!
-/// </summary>
 public static partial class FunctionTools
 {
     /// <summary>
-    /// foobarbaz
+    /// Date of target location.
     /// </summary>
-    /// <param name="x">p1</param>
-    /// <param name="y">p2</param>
+    /// <param name="timeZoneId">TimeZone of localtion like 'Tokeyo Standard Time', 'Eastern Standard Time', etc.</param>
+    /// <returns></returns>
+    [ClaudiaFunction]
+    public static DateTime Today(string timeZoneId)
+    {
+        return TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, timeZoneId);
+    }
+
+    /// <summary>
+    /// Sum of two integer parameters.
+    /// </summary>
+    /// <param name="x">parameter1.</param>
+    /// <param name="y">parameter2.</param>
     [ClaudiaFunction]
     public static int Sum(int x, int y)
     {
         return x + y;
     }
 
-    // Mock
-    public const string SystemPrompt = """
-In this environment you have access to a set of tools you can use to answer the user's question.
-
-You may call them like this:
-<function_calls>
-    <invoke>
-        <tool_name>$TOOL_NAME</tool_name>
-        <parameters>
-            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
-            ...
-        </parameters>
-    </invoke>
-</function_calls>
-
-Here are the tools available:
-<tools>
-    <tool_description>
-        <tool_name>Sum</tool_name>
-        <description>
-            foobarbaz
-        </description>
-        <parameters>
-            <parameter>
-                <name>x</name>
-                <type>int</type>
-                <description>p1</description>
-            </parameter>
-            <parameter>
-                <name>y</name>
-                <type>int</type>
-                <description>p2</description>
-            </parameter>
-        </parameters>
-    </tool_description>
-</tools>
-""";
-
-    public static class PromptXml
+    /// <summary>
+    /// Calculator function for doing basic arithmetic. 
+    /// Supports addition, subtraction, multiplication
+    /// </summary>
+    /// <param name="firstOperand">First operand (before the operator)</param>
+    /// <param name="secondOperand">Second operand (after the operator)</param>
+    /// <param name="operator">The operation to perform. Must be either +, -, *, or /</param>
+    [ClaudiaFunction]
+    static double DoPairwiseArithmetic(double firstOperand, double secondOperand, string @operator)
     {
-        public const string Sum = """
-    <tool_description>
-        <tool_name>Sum</tool_name>
-        <description>
-            foobarbaz
-        </description>
-        <parameters>
-            <parameter>
-                <name>x</name>
-                <type>int</type>
-                <description>p1</description>
-            </parameter>
-            <parameter>
-                <name>y</name>
-                <type>int</type>
-                <description>p2</description>
-            </parameter>
-        </parameters>
-    </tool_description>
-""";
+        return @operator switch
+        {
+            "+" => firstOperand + secondOperand,
+            "-" => firstOperand - secondOperand,
+            "*" => firstOperand * secondOperand,
+            "/" => firstOperand / secondOperand,
+            _ => throw new ArgumentException("Operation not supported")
+        };
     }
 
-    //public static ValueTask<object> InvokeAsync()
-    //{
-    //}
 }
 

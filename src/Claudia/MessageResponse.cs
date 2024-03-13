@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Claudia;
 
-public class MessagesResponse
+public class MessageResponse
 {
     [JsonPropertyName("id")]
     public required string Id { get; set; }

@@ -14,7 +14,7 @@ namespace Claudia;
 [JsonSerializable(typeof(Content))]
 [JsonSerializable(typeof(Metadata))]
 [JsonSerializable(typeof(Source))]
-[JsonSerializable(typeof(MessagesResponse))]
+[JsonSerializable(typeof(MessageResponse))]
 [JsonSerializable(typeof(Usage))]
 [JsonSerializable(typeof(ErrorResponseShape))]
 [JsonSerializable(typeof(ErrorResponse))]
