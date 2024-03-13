@@ -19,14 +19,20 @@ var message = await anthropic.Messages.CreateAsync(new()
 {
     Model = Models.Claude3Opus,
     MaxTokens = 1024,
-    System = FunctionTools.SystemPrompt + ".複数の<invoke>がある場合は一つの<function_calls>の中にまとめてください。",
+    System = FunctionTools.SystemPrompt,
     StopSequences = [StopSequnces.CloseFunctionCalls],
     Messages = [
         new() { Role = Roles.User, Content = userInput },
     ],
 });
 
+Console.WriteLine(message.Content[0].Text);
+Console.WriteLine("-----------");
+
 var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
+
+Console.WriteLine(partialAssistantMessage);
+Console.WriteLine("-----------");
 
 var callResult = await anthropic.Messages.CreateAsync(new()
 {
@@ -39,23 +45,7 @@ var callResult = await anthropic.Messages.CreateAsync(new()
     ],
 });
 
-// Show last result.
-// Therefore, 1,984,135 multiplied by 9,343,116 equals 18,538,003,464,660.
 Console.WriteLine(callResult);
-
-//static double DoPairwiseArithmetic(double num1, double num2, string operation)
-//{
-//    return operation switch
-//    {
-//        "+" => num1 + num2,
-//        "-" => num1 - num2,
-//        "*" => num1 * num2,
-//        "/" => num1 / num2,
-//        _ => throw new ArgumentException("Operation not supported")
-//    };
-//}
-
-
 
 
 

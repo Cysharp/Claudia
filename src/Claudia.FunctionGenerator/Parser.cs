@@ -1,10 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
 
 namespace Claudia.FunctionGenerator;
 
@@ -67,40 +64,6 @@ public class Parser
 
                 // TODO:verify not static
                 // TODO:verify documentation somment of summary and parameters.
-
-                //var (attr, setLogLevel) = GetAttribute(source);
-                //var msg = attr.Message;
-
-                //// parse and verify
-                //if (!MessageParser.TryParseFormat(attr.Message, out var segments))
-                //{
-                //    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MessageTemplateParseFailed, (source.TargetNode as MethodDeclarationSyntax)!.Identifier.GetLocation(), method.Name));
-                //    continue;
-                //}
-
-                //var (parameters, foundLogLevel) = GetMethodParameters(method, setLogLevel);
-
-                //// Set LinkedParameters
-                //foreach (var p in parameters.Where(x => x.IsParameter))
-                //{
-                //    p.LinkedMessageSegment = segments
-                //        .Where(x => x.Kind == MessageSegmentKind.NameParameter)
-                //        .FirstOrDefault(x => x.NameParameter.Equals(p.Symbol.Name, StringComparison.OrdinalIgnoreCase));
-                //}
-
-                //var methodDecl = new LogMethodDeclaration(
-                //    Attribute: attr,
-                //    TargetMethod: (IMethodSymbol)source.TargetSymbol,
-                //    TargetSyntax: (MethodDeclarationSyntax)source.TargetNode,
-                //    MessageSegments: segments,
-                //    MethodParameters: parameters);
-
-                //if (!Verify(methodDecl, foundLogLevel, targetType, symbol))
-                //{
-                //    continue;
-                //}
-
-                //logMethods.Add(methodDecl);
 
                 methods.Add(new Method { Symbol = method, Syntax = (MethodDeclarationSyntax)source.TargetNode });
             }

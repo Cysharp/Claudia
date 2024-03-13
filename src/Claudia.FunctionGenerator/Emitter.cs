@@ -46,7 +46,7 @@ public class Emitter
 
         sb.AppendLine($$"""
     public const string SystemPrompt = @$"
-In this environment you have access to a set of tools you can use to answer the user's question.
+In this environment you have access to a set of tools you can use to answer the user's question. If there are multiple <invoke> tags, please consolidate them into a single <function_calls> block.
 
 You may call them like this:
 <function_calls>
@@ -57,6 +57,14 @@ You may call them like this:
             ...
         </parameters>
     </invoke>
+    <invoke>
+        <tool_name>$TOOL_NAME</tool_name>
+        <parameters>
+            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
+            ...
+        </parameters>
+    </invoke>
+    ...
 </function_calls>
 
 Here are the tools available:
@@ -90,12 +98,12 @@ Here are the tools available:
         var docComment = method.Symbol.GetDocumentationCommentXml();
         var xml = XElement.Parse(docComment);
 
-        var description = ((string)xml.Element("summary")).Trim();
+        var description = ((string)xml.Element("summary")).Replace("\"", "'").Trim();
 
         var parameters = new List<XElement>();
         foreach (var p in xml.Elements("param"))
         {
-            var paramDescription = ((string)p).Trim();
+            var paramDescription = ((string)p).Replace("\"", "'").Trim();
 
             // type retrieve from method symbol
             var name = p.Attribute("name").Value.Trim();
@@ -145,8 +153,11 @@ Here are the tools available:
 #pragma warning disable CS1998
     public static async ValueTask<string?> InvokeAsync(MessageResponse message)
     {
-        var text = message.Content[0].Text!;
-        var tagStart = text.IndexOf("<function_calls>");
+        var content = message.Content.FirstOrDefault(x => x.Text != null);
+        if (content == null) return null;
+
+        var text = content.Text;
+        var tagStart = text .IndexOf("<function_calls>");
         if (tagStart == -1) return null;
 
         var functionCalls = text.Substring(tagStart) + "</function_calls>";
@@ -173,14 +184,10 @@ Here are the tools available:
 
         static void BuildResult<T>(StringBuilder sb, string toolName, T result)
         {
-            sb.AppendLine(@$"
-    <result>
+            sb.AppendLine(@$"    <result>
         <tool_name>{toolName}</tool_name>
-        <stdout>
-            {result}
-        </stdout>
-    </result>
-");
+        <stdout>{result}</stdout>
+    </result>");
         }
     }
 #pragma warning restore CS1998

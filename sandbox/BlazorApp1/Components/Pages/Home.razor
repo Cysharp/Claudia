@@ -9,7 +9,6 @@
     <div class="flex-0 text-base font-bold mt-4 text-center">Blazor Claude</div>
 
     <div class="flex-1 text-sm p-4">
-
         <div class="p-4 h-full border bg-white rounded-md overflow-y-auto">
             @foreach (var item in chatMessages)
             {
@@ -29,13 +28,12 @@
         </div>
     </div>
 
-
     <div class="flex-0 bg-white p-2 border-t-2">
         <div class="flex w-full mb-2">
-            <div class="flex-0 mr-2 range_slider">
+            <div class="flex-0 mr-2 relative">
                 <div class="block text-sm font-medium leading-6 text-gray-900">Temperature</div>
-                <input onmouseover="" class="w-full h-1 mb-6 bg-gray-200 rounded-lg appearance-none cursor-pointer range-sm dark:bg-gray-700" type="range" min="0.0" max="1.0" step=0.1 value=@temperature>
-                <span class="bubble">@temperature</span>
+                <input onmouseover="" class="range_slider w-full h-1 mb-6 bg-gray-200 rounded-lg appearance-none cursor-pointer range-sm dark:bg-gray-700" type="range" min="0.0" max="1.0" step=0.1 value=@temperature>
+                <span class="range_bubble">@temperature</span>
             </div>
             <div class="flex-1">
                 <div class="block text-sm font-medium leading-6 text-gray-900">System</div>
@@ -46,7 +44,7 @@
         <div class="w-full">
             <form class="flex" @onsubmit=SendClick>
                 <input type="text" id="chat-input" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 text-sm leading-6" placeholder=" Enter Message..." autocomplete="off" @bind="textInput">
-                <button class="ml-2 mt-0 w-auto inline-flex items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" disabled="@running">Send</button>
+                <button class="ml-2 mt-0 w-auto inline-flex items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" disabled="@running">Send</button>
             </form>
         </div>
     </div>
@@ -55,17 +53,14 @@
 
 <style>
     button:disabled {
-        background: #AAA;
+        background-color: rgb(179 179 179);
     }
 
-    .range_slider {
-        position: relative;
-    }
-    .range_slider .bubble {
+    .range_bubble {
         background-color: #333;
         color: #fff;
         position: absolute;
-        top: 0px;
+        bottom: 0px;
         left: 0px;
         padding: 2px 6px;
         border-radius: 3px;
@@ -75,9 +70,8 @@
 </style>
 
 <script>
-    var rangeLabel1 = document.querySelector(".range_slider");
-    var rangeBubble = document.querySelector(".bubble");
-    var rangeInput = rangeLabel1.children[1];
+    var rangeInput = document.querySelector(".range_slider");
+    var rangeBubble = document.querySelector(".range_bubble");
 
     rangeInput.addEventListener("input", () => {
         setBubble(rangeInput, rangeBubble);
@@ -95,7 +89,6 @@
         var max = range.max ? range.max : 100;
         var newVal = Number(((val - min) * 100) / (max - min));
         bubble.innerHTML = val;
-
         bubble.style.left = `calc(${newVal}% + (${-5 - newVal * 0.15}px))`;
         rangeBubble.style.display = "inline-block";
     }

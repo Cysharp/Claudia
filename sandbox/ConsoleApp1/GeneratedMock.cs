@@ -26,7 +26,7 @@
 //{
 
 //    public const string SystemPrompt = @$"
-//In this environment you have access to a set of tools you can use to answer the user's question.
+//In this environment you have access to a set of tools you can use to answer the user's question. If there are multiple <invoke> tags, please consolidate them into a single <function_calls> block.
 
 //You may call them like this:
 //<function_calls>
@@ -47,71 +47,137 @@
 //    public static class PromptXml
 //    {
 //        public const string ToolsAll = @$"
+//{Today}
 //{Sum}
+//{DoPairwiseArithmetic}
+//";
+
+//        public const string Today = @"
+//<tool_description>
+//  <tool_name>Today</tool_name>
+//  <description>Date of target location.</description>
+//  <parameters>
+//    <parameter>
+//      <name>timeZoneId</name>
+//      <type>string</type>
+//      <description>TimeZone of localtion like 'Tokeyo Standard Time', 'Eastern Standard Time', etc.</description>
+//    </parameter>
+//  </parameters>
+//</tool_description>
 //";
 
 //        public const string Sum = @"
 //<tool_description>
 //  <tool_name>Sum</tool_name>
-//  <description>foobarbaz</description>
+//  <description>Sum of two integer parameters.</description>
 //  <parameters>
 //    <parameter>
 //      <name>x</name>
 //      <type>int</type>
-//      <description>p1</description>
+//      <description>parameter1.</description>
 //    </parameter>
 //    <parameter>
 //      <name>y</name>
 //      <type>int</type>
-//      <description>p2</description>
+//      <description>parameter2.</description>
+//    </parameter>
+//  </parameters>
+//</tool_description>
+//";
+
+//        public const string DoPairwiseArithmetic = @"
+//<tool_description>
+//  <tool_name>DoPairwiseArithmetic</tool_name>
+//  <description>Calculator function for doing basic arithmetic. 
+//    Supports addition, subtraction, multiplication</description>
+//  <parameters>
+//    <parameter>
+//      <name>firstOperand</name>
+//      <type>double</type>
+//      <description>First operand (before the operator)</description>
+//    </parameter>
+//    <parameter>
+//      <name>secondOperand</name>
+//      <type>double</type>
+//      <description>Second operand (after the operator)</description>
+//    </parameter>
+//    <parameter>
+//      <name>operator</name>
+//      <type>string</type>
+//      <description>The operation to perform. Must be either +, -, *, or /</description>
 //    </parameter>
 //  </parameters>
 //</tool_description>
 //";
 
 
+//    }
+
 //#pragma warning disable CS1998
-//        public static async ValueTask<string?> InvokeAsync(MessageResponse message)
+//    public static async ValueTask<string?> InvokeAsync(MessageResponse message)
+//    {
+//        var content = message.Content.FirstOrDefault(x => x.Text != null);
+//        if (content == null) return null;
+        
+//        var text = content.Text;
+//        var tagStart = text .IndexOf("<function_calls>");
+//        if (tagStart == -1) return null;
+
+//        var functionCalls = text.Substring(tagStart) + "</function_calls>";
+//        var xmlResult = XElement.Parse(functionCalls);
+
+//        var sb = new StringBuilder();
+//        sb.AppendLine(functionCalls);
+//        sb.AppendLine("<function_results>");
+
+//        foreach (var item in xmlResult.Elements("invoke"))
 //        {
-//            var text = message.Content[0].Text!;
-//            var tagStart = text.IndexOf("<function_calls>");
-//            if (tagStart == -1) return null;
-
-//            var functionCalls = text.Substring(tagStart) + "</function_calls>";
-//            var xmlResult = XElement.Parse(functionCalls);
-
-//            var sb = new StringBuilder();
-//            sb.AppendLine(functionCalls);
-//            sb.AppendLine("<function_results>");
-
-//            foreach (var item in xmlResult.Elements("invoke"))
+//            var name = (string)item.Element("tool_name")!;
+//            switch (name)
 //            {
-//                var name = (string)item.Element("tool_name")!;
-//                switch (name)
-//                {
-//                    case "Sum":
-//                        {
-//                            var parameters = item.Element("parameters")!;
+//                case "Today":
+//                    {
+//                        var parameters = item.Element("parameters")!;
 
-//                            var _0 = (int)parameters.Element("x")!;
-//                            var _1 = (int)parameters.Element("y")!;
+//                        var _0 = (string)parameters.Element("timeZoneId")!;
 
-//                            BuildResult(sb, "Sum", Sum(_0, _1));
-//                            break;
-//                        }
-
-//                    default:
+//                        BuildResult(sb, "Today", Today(_0));
 //                        break;
-//                }
+//                    }
+//                case "Sum":
+//                    {
+//                        var parameters = item.Element("parameters")!;
+
+//                        var _0 = (int)parameters.Element("x")!;
+//                        var _1 = (int)parameters.Element("y")!;
+
+//                        BuildResult(sb, "Sum", Sum(_0, _1));
+//                        break;
+//                    }
+//                case "DoPairwiseArithmetic":
+//                    {
+//                        var parameters = item.Element("parameters")!;
+
+//                        var _0 = (double)parameters.Element("firstOperand")!;
+//                        var _1 = (double)parameters.Element("secondOperand")!;
+//                        var _2 = (string)parameters.Element("operator")!;
+
+//                        BuildResult(sb, "DoPairwiseArithmetic", DoPairwiseArithmetic(_0, _1, _2));
+//                        break;
+//                    }
+
+//                default:
+//                    break;
 //            }
+//        }
 
-//            sb.AppendLine("</function_results>");
+//        sb.Append("</function_results>"); // final assistant content cannot end with trailing whitespace
 
-//            return sb.ToString();
+//        return sb.ToString();
 
-//            static void BuildResult<T>(StringBuilder sb, string toolName, T result)
-//            {
-//                sb.AppendLine(@$"
+//        static void BuildResult<T>(StringBuilder sb, string toolName, T result)
+//        {
+//            sb.AppendLine(@$"
 //    <result>
 //        <tool_name>{toolName}</tool_name>
 //        <stdout>
@@ -119,9 +185,8 @@
 //        </stdout>
 //    </result>
 //");
-//            }
 //        }
-//#pragma warning restore CS1998
 //    }
+//#pragma warning restore CS1998
 //}
 
