@@ -64,7 +64,7 @@ public class Anthropic : IMessages, IDisposable
         request.Stream = null;
         using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
 
-        var result = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(AnthropicJsonSerialzierContext.Default.Options, ct)).ConfigureAwait(false);
+        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<MessagesResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(false);
         return result!;
     }
 
@@ -94,7 +94,7 @@ public class Anthropic : IMessages, IDisposable
         }
 
         // use ResponseHeadersRead to ignore buffering response.
-        var msg = await RequestWithCancelAsync((httpClient, (bytes, requestUri, overrideOptions, ApiKey)), cancellationToken, overrideOptions, true, static (x, ct) =>
+        var msg = await RequestWithAsync((httpClient, (bytes, requestUri, overrideOptions, ApiKey)), cancellationToken, overrideOptions, static (x, ct) =>
         {
             // for retry, create new HttpRequestMessage per request.
             var state = x.Item2;
@@ -115,6 +115,34 @@ public class Anthropic : IMessages, IDisposable
 
             message.Content = new ByteArrayContent(state.bytes);
             return x.httpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, ct);
+        }, static response =>
+        {
+            // Same logic of official sdk's shouldRetry
+            // https://github.com/anthropics/anthropic-sdk-typescript/blob/104562c3c2164d50da105fed6cfb400b118503d0/src/core.ts#L521
+            if (response.Headers.TryGetValues("x-should-retry", out var values))
+            {
+                foreach (var item in values)
+                {
+                    if (item == "true") return true;
+                    else if (item == "false") return false;
+                }
+            }
+
+            var status = (int)response.StatusCode;
+
+            // Retry on request timeouts.
+            if (status == 408) return true;
+
+            // Retry on lock timeouts.
+            if (status == 409) return true;
+
+            // Retry on rate limits.
+            if (status == 429) return true;
+
+            // Retry internal errors.
+            if (status >= 500) return true;
+
+            return false;
         }).ConfigureAwait(false);
 
         var statusCode = (int)msg.StatusCode;
@@ -122,9 +150,9 @@ public class Anthropic : IMessages, IDisposable
         switch (statusCode)
         {
             case 200:
-                return msg;
+                return msg!;
             default:
-                var shape = await RequestWithCancelAsync(msg, cancellationToken, overrideOptions, false, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerialzierContext.Default.Options, ct)).ConfigureAwait(false);
+                var shape = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(false);
 
                 var error = shape!.ErrorResponse;
                 var errorMsg = error.Message;
@@ -137,9 +165,10 @@ public class Anthropic : IMessages, IDisposable
         }
     }
 
-    async Task<TResult> RequestWithCancelAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, bool doRetry, Func<TState, CancellationToken, Task<TResult>> func)
+    // with Cancel, Timeout, Retry.
+    async Task<TResult> RequestWithAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, Func<TState, CancellationToken, Task<TResult>> func, Func<TResult, bool>? shouldRetry)
     {
-        var retriesRemaining = !doRetry ? 0 : overrideOptions?.MaxRetries ?? MaxRetries;
+        var retriesRemaining = (shouldRetry == null) ? 0 : (overrideOptions?.MaxRetries ?? MaxRetries);
         var timeout = overrideOptions?.Timeout ?? Timeout;
     RETRY:
         using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
@@ -150,7 +179,26 @@ public class Anthropic : IMessages, IDisposable
             {
                 try
                 {
-                    return await func(state, cts.Token).ConfigureAwait(false);
+                    var result = await func(state, cts.Token).ConfigureAwait(false);
+                    if (shouldRetry != null)
+                    {
+                        if (shouldRetry(result))
+                        {
+                            if (retriesRemaining > 0)
+                            {
+#if NETSTANDARD2_1
+                                var rand = random;
+#else
+                                var rand = Random.Shared;
+#endif
+                                var sleep = CalculateDefaultRetryTimeoutMillis(rand, retriesRemaining, MaxRetries);
+                                await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
+                                retriesRemaining--;
+                                goto RETRY;
+                            }
+                        }
+                    }
+                    return result;
                 }
                 catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
                 {

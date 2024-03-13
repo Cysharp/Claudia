@@ -397,4 +397,71 @@ public static partial class FunctionTools
     {
         return x + y;
     }
+
+    // Mock
+    public const string SystemPrompt = """
+In this environment you have access to a set of tools you can use to answer the user's question.
+
+You may call them like this:
+<function_calls>
+    <invoke>
+        <tool_name>$TOOL_NAME</tool_name>
+        <parameters>
+            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
+            ...
+        </parameters>
+    </invoke>
+</function_calls>
+
+Here are the tools available:
+<tools>
+    <tool_description>
+        <tool_name>Sum</tool_name>
+        <description>
+            foobarbaz
+        </description>
+        <parameters>
+            <parameter>
+                <name>x</name>
+                <type>int</type>
+                <description>p1</description>
+            </parameter>
+            <parameter>
+                <name>y</name>
+                <type>int</type>
+                <description>p2</description>
+            </parameter>
+        </parameters>
+    </tool_description>
+</tools>
+""";
+
+    public static class PromptXml
+    {
+        public const string Sum = """
+    <tool_description>
+        <tool_name>Sum</tool_name>
+        <description>
+            foobarbaz
+        </description>
+        <parameters>
+            <parameter>
+                <name>x</name>
+                <type>int</type>
+                <description>p1</description>
+            </parameter>
+            <parameter>
+                <name>y</name>
+                <type>int</type>
+                <description>p2</description>
+            </parameter>
+        </parameters>
+    </tool_description>
+""";
+    }
+
+    //public static ValueTask<object> InvokeAsync()
+    //{
+    //}
 }
+
