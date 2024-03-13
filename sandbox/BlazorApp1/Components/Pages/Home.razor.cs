@@ -19,6 +19,7 @@ public partial class Home
     async void SendClick()
     {
         if (running) return;
+        if (string.IsNullOrWhiteSpace(textInput)) return;
 
         running = true;
         try

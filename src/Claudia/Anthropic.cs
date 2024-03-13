@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using System.Linq.Expressions;
+using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -33,6 +34,8 @@ public class Anthropic : IMessages, IDisposable
     public TimeSpan Timeout { get; init; } = TimeSpan.FromMinutes(10);
 
     public int MaxRetries { get; init; } = 2;
+
+    public bool IncludeRequestJsonOnInvalidRequestError { get; init; } = false;
 
     public HttpClient HttpClient => httpClient;
 
@@ -119,30 +122,73 @@ public class Anthropic : IMessages, IDisposable
         {
             // Same logic of official sdk's shouldRetry
             // https://github.com/anthropics/anthropic-sdk-typescript/blob/104562c3c2164d50da105fed6cfb400b118503d0/src/core.ts#L521
+
+            var status = (int)response.StatusCode;
+            if (status == 200) return null;
+
             if (response.Headers.TryGetValues("x-should-retry", out var values))
             {
                 foreach (var item in values)
                 {
-                    if (item == "true") return true;
-                    else if (item == "false") return false;
+                    if (item == "true") goto SHOUD_RETRY;
+                    else if (item == "false") return null;
                 }
             }
 
-            var status = (int)response.StatusCode;
-
             // Retry on request timeouts.
-            if (status == 408) return true;
+            if (status == 408) goto SHOUD_RETRY;
 
             // Retry on lock timeouts.
-            if (status == 409) return true;
+            if (status == 409) goto SHOUD_RETRY;
 
             // Retry on rate limits.
-            if (status == 429) return true;
+            if (status == 429) goto SHOUD_RETRY;
 
             // Retry internal errors.
-            if (status >= 500) return true;
+            if (status >= 500) goto SHOUD_RETRY;
 
-            return false;
+            return null;
+
+        SHOUD_RETRY:
+            // get retry time from header
+            // https://github.com/anthropics/anthropic-sdk-typescript/blob/104562c3c2164d50da105fed6cfb400b118503d0/src/core.ts#L551-L569
+
+            var retryTime = TimeSpan.Zero; // when zero, needs calc exponential backoff
+
+            if (response.Headers.TryGetValues("retry-after-ms", out var retryAfterMs))
+            {
+                foreach (var item in retryAfterMs)
+                {
+                    if (double.TryParse(item, out var ms))
+                    {
+                        retryTime = TimeSpan.FromMilliseconds(ms);
+                        break;
+                    }
+                }
+            }
+            if (retryTime == TimeSpan.Zero && response.Headers.TryGetValues("retry-after", out var retryAfter))
+            {
+                foreach (var item in retryAfter)
+                {
+                    if (double.TryParse(item, out var retryAfterSeconds))
+                    {
+                        retryTime = TimeSpan.FromSeconds(retryAfterSeconds);
+                        break;
+                    }
+                    else if (DateTime.TryParse(item, out var date))
+                    {
+                        retryTime = date - DateTime.UtcNow;
+                        break;
+                    }
+                }
+            }
+
+            if (!(TimeSpan.Zero <= retryTime && retryTime < TimeSpan.FromSeconds(6)))
+            {
+                retryTime = TimeSpan.Zero;
+            }
+
+            return retryTime;
         }).ConfigureAwait(false);
 
         var statusCode = (int)msg.StatusCode;
@@ -157,16 +203,16 @@ public class Anthropic : IMessages, IDisposable
                 var error = shape!.ErrorResponse;
                 var errorMsg = error.Message;
                 var code = (ErrorCode)statusCode;
-                if (code == ErrorCode.InvalidRequestError)
+                if (code == ErrorCode.InvalidRequestError && IncludeRequestJsonOnInvalidRequestError)
                 {
-                    errorMsg += ". Input: " + JsonSerializer.Serialize(request, AnthropicJsonSerialzierContext.Default.Options);
+                    errorMsg += ". Request: " + JsonSerializer.Serialize(request, AnthropicJsonSerialzierContext.Default.Options);
                 }
                 throw new ClaudiaException((ErrorCode)statusCode, error.Type, errorMsg);
         }
     }
 
     // with Cancel, Timeout, Retry.
-    async Task<TResult> RequestWithAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, Func<TState, CancellationToken, Task<TResult>> func, Func<TResult, bool>? shouldRetry)
+    async Task<TResult> RequestWithAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, Func<TState, CancellationToken, Task<TResult>> func, Func<TResult, TimeSpan?>? shouldRetry)
     {
         var retriesRemaining = (shouldRetry == null) ? 0 : (overrideOptions?.MaxRetries ?? MaxRetries);
         var timeout = overrideOptions?.Timeout ?? Timeout;
@@ -182,17 +228,25 @@ public class Anthropic : IMessages, IDisposable
                     var result = await func(state, cts.Token).ConfigureAwait(false);
                     if (shouldRetry != null)
                     {
-                        if (shouldRetry(result))
+                        var retryTime = shouldRetry(result);
+                        if (retryTime != null)
                         {
                             if (retriesRemaining > 0)
                             {
+                                if (retryTime.Value == TimeSpan.Zero)
+                                {
 #if NETSTANDARD2_1
-                                var rand = random;
+                                    var rand = random;
 #else
-                                var rand = Random.Shared;
+                                    var rand = Random.Shared;
 #endif
-                                var sleep = CalculateDefaultRetryTimeoutMillis(rand, retriesRemaining, MaxRetries);
-                                await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
+                                    var sleep = CalculateDefaultRetryTimeoutMillis(rand, retriesRemaining, MaxRetries);
+                                    await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    await Task.Delay(retryTime.Value, cancellationToken).ConfigureAwait(false);
+                                }
                                 retriesRemaining--;
                                 goto RETRY;
                             }
@@ -253,6 +307,11 @@ public class Anthropic : IMessages, IDisposable
     public void Dispose()
     {
         httpClient.Dispose();
+    }
+
+    static TimeSpan Normalize(TimeSpan timeSpan)
+    {
+        return timeSpan < TimeSpan.Zero ? TimeSpan.Zero : timeSpan;
     }
 
     static class ApiEndpoints
