@@ -1,5 +1,6 @@
 ﻿using Claudia;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorApp1.Components.Pages;
 
@@ -33,7 +34,8 @@ public partial class Home
                 Messages = chatMessages.ToArray()
             });
 
-            chatMessages.Add(new Message { Role = Roles.Assistant, Content = "" });
+            var currentMessage = new Message { Role = Roles.Assistant, Content = "" };
+            chatMessages.Add(currentMessage);
 
             textInput = ""; // clear input.
             StateHasChanged();
@@ -42,12 +44,7 @@ public partial class Home
             {
                 if (messageStreamEvent is ContentBlockDelta content)
                 {
-                    var lastMessage = chatMessages[^1];
-                    var newMessage = lastMessage with
-                    {
-                        Content = lastMessage.Content[0].Text + content.Delta.Text
-                    };
-                    chatMessages[^1] = newMessage;
+                    currentMessage.Content[0].Text += content.Delta.Text;
                     StateHasChanged();
                 }
             }
