@@ -52,6 +52,7 @@ public partial class Home
         finally
         {
             running = false;
+            StateHasChanged();
         }
     }
 }
