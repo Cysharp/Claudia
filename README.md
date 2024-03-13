@@ -2,7 +2,7 @@
 
 Unofficial [Anthropic Claude API](https://www.anthropic.com/api) client for .NET.
 
-We have built a C# API similar to the official [Python SDK](https://github.com/anthropics/anthropic-sdk-python) and [TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript). It supports netstandard2.1, net6.0, and net8.0. If you want to use it in Unity, please reference it from [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
+We have built a C# API similar to the official [Python SDK](https://github.com/anthropics/anthropic-sdk-python) and [TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript). [Function calling generator](#function-calling) via C# Source Generator has also been implemented. It supports netstandard2.1, net6.0, and net8.0. If you want to use it in Unity, please reference it from [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
 
 
 Installation
@@ -374,6 +374,96 @@ var message = await anthropic.Messages.CreateAsync(new()
     }],
 });
 Console.WriteLine(message);
+```
+
+Function Calling
+---
+Static methods belonging to the partial class with `[ClaudiaFunction]` can generate system messages corresponding to Claude's function calling, parsing of replies and function calls, and XML messages of results.
+
+The description to convey information to Claude is automatically retrieved from the Document Comment.
+
+```csharp
+public static partial class FunctionTools
+{
+    /// <summary>
+    /// Date of target location.
+    /// </summary>
+    /// <param name="timeZoneId">TimeZone of localtion like 'Tokeyo Standard Time', 'Eastern Standard Time', etc.</param>
+    /// <returns></returns>
+    [ClaudiaFunction]
+    public static DateTime Today(string timeZoneId)
+    {
+        return TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, timeZoneId);
+    }
+
+    /// <summary>
+    /// Sum of two integer parameters.
+    /// </summary>
+    /// <param name="x">parameter1.</param>
+    /// <param name="y">parameter2.</param>
+    [ClaudiaFunction]
+    public static int Sum(int x, int y)
+    {
+        return x + y;
+    }
+
+    /// <summary>
+    /// Calculator function for doing basic arithmetic. 
+    /// Supports addition, subtraction, multiplication
+    /// </summary>
+    /// <param name="firstOperand">First operand (before the operator)</param>
+    /// <param name="secondOperand">Second operand (after the operator)</param>
+    /// <param name="operator">The operation to perform. Must be either +, -, *, or /</param>
+    [ClaudiaFunction]
+    static double DoPairwiseArithmetic(double firstOperand, double secondOperand, string @operator)
+    {
+        return @operator switch
+        {
+            "+" => firstOperand + secondOperand,
+            "-" => firstOperand - secondOperand,
+            "*" => firstOperand * secondOperand,
+            "/" => firstOperand / secondOperand,
+            _ => throw new ArgumentException("Operation not supported")
+        };
+    }
+}
+```
+
+For example, use the following Specify the generated `(target partial class).SystemPrompt` as the system prompt and `StopSequnces.CloseFunctionCalls`(`</function_calls>`) as StopSequences.
+
+```csharp
+var anthropic = new Anthropic();
+
+var userInput = "Please tell me the current time in Tokyo and the current time in the UK." +
+                "Also, while you're at it, please tell me what 1,984,135 * 9,343,116 equals.";
+
+var message = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Opus,
+    MaxTokens = 1024,
+    System = FunctionTools.SystemPrompt,
+    StopSequences = [StopSequnces.CloseFunctionCalls],
+    Messages = [
+        new() { Role = Roles.User, Content = userInput },
+    ],
+});
+
+var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
+
+Console.WriteLine(partialAssistantMessage);
+
+var callResult = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Opus,
+    MaxTokens = 1024,
+    System = FunctionTools.SystemPrompt,
+    Messages = [
+        new() { Role = Roles.User, Content = userInput },
+        new() { Role = Roles.Assistant, Content = partialAssistantMessage! },
+    ],
+});
+
+Console.WriteLine(callResult);
 ```
 
 Blazor Sample

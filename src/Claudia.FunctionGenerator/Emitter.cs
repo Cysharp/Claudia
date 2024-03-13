@@ -46,7 +46,7 @@ public class Emitter
 
         sb.AppendLine($$"""
     public const string SystemPrompt = @$"
-In this environment you have access to a set of tools you can use to answer the user's question. If there are multiple <invoke> tags, please consolidate them into a single <function_calls> block.
+In this environment you have access to a set of tools you can use to answer the user's question. If your solution involves the use of multiple tools, please include multiple <invoke>s within a single <function_calls> tag. Each step-by-step answer or tag is not required. Only a single <function_calls> tag should be returned at the beginning.
 
 You may call them like this:
 <function_calls>
@@ -70,23 +70,24 @@ You may call them like this:
 Here are the tools available:
 
 {PromptXml.ToolsAll}
+
+Again, including multiple <function_calls> tags in the reply is prohibited.
 ";
 
     public static class PromptXml
     {
         public const string ToolsAll = @$"
+<tools>
 {{toolsAll}}
+</tools>
 ";
-
 """);
 
         foreach (var method in parseResult.Methods)
         {
             EmitToolDescription(method);
-            sb.AppendLine();
         }
 
-        sb.AppendLine();
         sb.AppendLine("    }"); // close PromptXml
 
         sb.AppendLine();

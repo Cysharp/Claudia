@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
+using System.Xml.Linq;
 
 namespace Claudia.FunctionGenerator;
 
@@ -24,6 +25,8 @@ public class Parser
         // grouping by type(TypeDeclarationSyntax)
         foreach (var item in sources.GroupBy(x => x.TargetNode.Parent))
         {
+            methods.Clear();
+
             if (item.Key == null) continue;
             var targetType = (TypeDeclarationSyntax)item.Key;
             var symbol = item.First().SemanticModel.GetDeclaredSymbol(targetType);
@@ -32,38 +35,102 @@ public class Parser
             // verify is partial
             if (!IsPartial(targetType))
             {
-                // TODO:
-                // context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MustBePartial, targetType.Identifier.GetLocation(), symbol.Name));
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MustBePartial, targetType.Identifier.GetLocation(), symbol.Name));
                 continue;
             }
 
             // nested is not allowed
             if (IsNested(targetType))
             {
-                // TODO:
-                //context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.NestedNotAllow, targetType.Identifier.GetLocation(), symbol.Name));
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.NestedNotAllow, targetType.Identifier.GetLocation(), symbol.Name));
                 continue;
             }
 
             // verify is generis type
             if (symbol.TypeParameters.Length > 0)
             {
-                // TODO:
-                //context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GenericTypeNotSupported, targetType.Identifier.GetLocation(), symbol.Name));
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.GenericTypeNotSupported, targetType.Identifier.GetLocation(), symbol.Name));
                 continue;
             }
 
-            // TODO:verify documentation somment of summary.
+            if (!symbol.IsStatic)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MustBeStatic, targetType.Identifier.GetLocation(), symbol.Name));
+                continue;
+            }
 
-
-            methods.Clear();
             foreach (var source in item)
             {
                 // source.TargetNode
                 var method = (IMethodSymbol)source.TargetSymbol;
 
-                // TODO:verify not static
-                // TODO:verify documentation somment of summary and parameters.
+                var docXml = method.GetDocumentationCommentXml();
+                if (string.IsNullOrWhiteSpace(docXml))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodNeedsDocumentationCommentXml, method.Locations[0], method.Name));
+                    continue;
+                }
+                else
+                {
+                    var xml = XElement.Parse(docXml);
+                    var description = ((string)xml.Element("summary")).Replace("\"", "'").Trim();
+                    if (string.IsNullOrWhiteSpace(description))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodNeedsSummary, method.Locations[0], method.Name));
+                        continue;
+                    }
+
+                    var parameterNames = new HashSet<string>(method.Parameters.Select(x => x.Name));
+                    if (parameterNames.Count != 0)
+                    {
+                        foreach (var p in xml.Elements("param"))
+                        {
+                            var desc = (string)p;
+                            if (string.IsNullOrWhiteSpace(desc))
+                            {
+                                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ParameterNeedsDescription, method.Locations[0], method.Name, p.Name));
+                                continue;
+                            }
+
+                            var name = p.Attribute("name").Value.Trim();
+                            parameterNames.Remove(name);
+                        }
+
+                        if (parameterNames.Count != 0)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.AllParameterNeedsDescription, method.Locations[0], method.Name));
+                            continue;
+                        }
+                    }
+                }
+
+                foreach (var p in method.Parameters)
+                {
+                    // castable types
+                    // https://learn.microsoft.com/en-us/dotnet/api/system.xml.linq.xelement?view=net-8.0
+                    switch (p.Type.SpecialType)
+                    {
+                        case SpecialType.System_Boolean:
+                        case SpecialType.System_SByte:
+                        case SpecialType.System_Byte:
+                        case SpecialType.System_Int16:
+                        case SpecialType.System_UInt16:
+                        case SpecialType.System_Int32:
+                        case SpecialType.System_UInt32:
+                        case SpecialType.System_Int64:
+                        case SpecialType.System_UInt64:
+                        case SpecialType.System_Decimal:
+                        case SpecialType.System_Single:
+                        case SpecialType.System_Double:
+                        case SpecialType.System_String:
+                        case SpecialType.System_DateTime:
+                            break;
+                        default:
+                            // TODO: support DateTimeOffset, Guid, TimeSpan and there nullable.
+                            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ParameterTypeIsNotSupported, method.Locations[0], method.Name, p.Name, p.Type.Name));
+                            continue;
+                    }
+                }
 
                 methods.Add(new Method { Symbol = method, Syntax = (MethodDeclarationSyntax)source.TargetNode });
             }

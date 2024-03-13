@@ -10,11 +10,9 @@ using System.Xml.Linq;
 
 var anthropic = new Anthropic();
 
-//var userInput = "Additive 1,984,135 and 9,343,116";
+var userInput = "Please tell me the current time in Tokyo and the current time in the UK." +
+                "Also, while you're at it, please tell me what 1,984,135 * 9,343,116 equals.";
 
-var userInput = "東京の現在時間とイギリスの現在時間を教えてください。あとついでに1234+5899と 9999 - 3456を教えてください。";
-
-// Claude generate tool and parameters XML
 var message = await anthropic.Messages.CreateAsync(new()
 {
     Model = Models.Claude3Opus,
@@ -26,13 +24,9 @@ var message = await anthropic.Messages.CreateAsync(new()
     ],
 });
 
-Console.WriteLine(message.Content[0].Text);
-Console.WriteLine("-----------");
-
 var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
 
 Console.WriteLine(partialAssistantMessage);
-Console.WriteLine("-----------");
 
 var callResult = await anthropic.Messages.CreateAsync(new()
 {
@@ -332,6 +326,5 @@ public static partial class FunctionTools
             _ => throw new ArgumentException("Operation not supported")
         };
     }
-
 }
 
