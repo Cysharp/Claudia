@@ -13,7 +13,10 @@ public static class Models
     /// </summary>
     public const string Claude3Sonnet = "claude-3-sonnet-20240229";
 
-    // public const string Claude3Haiku = ""; Coming soon
+    /// <summary>
+    /// Fastest and most compact model for near-instant responsiveness
+    /// </summary>
+    public const string Claude3Haiku = "claude-3-haiku-20240307";
 
     /// <summary>Updated version of Claude 2 with improved accuracy</summary>
     public const string Claude2_1 = "claude-2.1";
