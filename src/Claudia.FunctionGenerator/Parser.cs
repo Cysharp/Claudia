@@ -127,6 +127,7 @@ public class Parser
                             break;
                         default:
                             // TODO: support DateTimeOffset, Guid, TimeSpan and there nullable.
+                            // TODO: void is not allowed.
                             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ParameterTypeIsNotSupported, method.Locations[0], method.Name, p.Name, p.Type.Name));
                             continue;
                     }

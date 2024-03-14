@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using System.Text;
 using System.Xml.Linq;
 
@@ -133,6 +133,9 @@ Again, including multiple <function_calls> tags in the reply is prohibited.
         var parameterParseString = new StringBuilder();
         foreach (var method in parseResult.Methods)
         {
+            var returnType = method.Symbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var isTask = (returnType.StartsWith("global::System.Threading.Tasks.Task") || returnType.StartsWith("global::System.Threading.Tasks.ValueTask"));
+
             parameterParseString.AppendLine($"                case \"{method.Name}\":");
             parameterParseString.AppendLine("                    {");
             parameterParseString.AppendLine("                        var parameters = item.Element(\"parameters\")!;");
@@ -145,7 +148,14 @@ Again, including multiple <function_calls> tags in the reply is prohibited.
                 parameterParseString.AppendLine($"                        var _{i++} = ({p.Type.ToDisplayString()})parameters.Element(\"{p.Name}\")!;");
             }
             parameterParseString.AppendLine();
-            parameterParseString.AppendLine($"                        BuildResult(sb, \"{method.Name}\", {method.Name}({parameterNames}));");
+            if (isTask)
+            {
+                parameterParseString.AppendLine($"                        BuildResult(sb, \"{method.Name}\", await {method.Name}({parameterNames}).ConfigureAwait(false));");
+            }
+            else
+            {
+                parameterParseString.AppendLine($"                        BuildResult(sb, \"{method.Name}\", {method.Name}({parameterNames}));");
+            }
             parameterParseString.AppendLine("                        break;");
             parameterParseString.AppendLine("                    }");
         }
