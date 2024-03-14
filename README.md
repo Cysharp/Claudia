@@ -2,8 +2,9 @@
 
 Unofficial [Anthropic Claude API](https://www.anthropic.com/api) client for .NET.
 
-We have built a C# API similar to the official [Python SDK](https://github.com/anthropics/anthropic-sdk-python) and [TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript). [Function calling generator](#function-calling) via C# Source Generator has also been implemented. It supports netstandard2.1, net6.0, and net8.0. If you want to use it in Unity, please reference it from [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
+We have built a C# API similar to the official [Python SDK](https://github.com/anthropics/anthropic-sdk-python) and [TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript). It supports netstandard2.1, net6.0, and net8.0. If you want to use it in Unity, please reference it from [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
 
+In addition to the pure client SDK, it also includes a C# Source Generator for performing Function Calling, similar to [anthropic-tools](https://github.com/anthropics/anthropic-tools/).
 
 Installation
 ---
@@ -33,6 +34,8 @@ var message = await anthropic.Messages.CreateAsync(new()
 Console.WriteLine(message);
 ```
 
+Claudia is designed to have a similar look and feel to the official client, particularly the TypeScript SDK. However, it does not use `object`, `dynamic`, or `Dictionary`, and everything is strongly typed. By utilizing [C# 9.0 Target-typed new expressions](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/target-typed-new) and [C# 12 Collection expressions](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-12.0/collection-expressions), it can be written in a simple manner.
+
 Streaming Messages
 ---
 We provide support for streaming responses using Server Sent Events (SSE).
@@ -57,7 +60,7 @@ await foreach (var messageStreamEvent in stream)
 
 If you need to cancel a stream, you can pass the `CancellationToken` to `CreateStreamAsync`.
 
-Types of MessageStreamEvents are here [IMessageStreamEvent](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/IMessageStreamEvent.cs).
+The Stream returns an `IAsyncEnumerable<IMessageStreamEvent>`, allowing it to be enumerated using `await foreach`. The implementation types of `IMessageStreamEvent` can be found in [IMessageStreamEvent.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/IMessageStreamEvent.cs).
 
 For example, outputs the text results.
 
@@ -376,36 +379,215 @@ var message = await anthropic.Messages.CreateAsync(new()
 Console.WriteLine(message);
 ```
 
+Currently, there are four types of uploadable binaries: `image/jpeg`, `image/png`, `image/gif`, and `image/webp`. For example, if you want to upload a markdown file, it's best to read its contents and send it as text. If you want to upload a PDF, you can either convert it to text or an image before sending. Presentation files like pptx can also be sent as images, and Claude will interpret the content and extract the text for you.
+
+System and Temperature
+---
+Other optional properties of `MessageRequest` include `System`, `Metadata`, `StopSequences`, `Temperature`, `TopP`, and `TopK`.
+
+```csharp
+var message = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Haiku,
+    MaxTokens = 1024,
+    System = SystemPrompts.Claude3,
+    Temperature = 0.4,
+    Messages = [
+        new() { Role = Roles.User, Content = "Hello, Claude" },
+    ],
+});
+```
+
+`SystemPrompts.Claude3` is a string constant for the System Prompt used in the Official Chat UI. Of course, you can also set any arbitrary System Prompt.
+
+Save / Load
+---
+TODO:...
+
 Function Calling
 ---
-Static methods belonging to the partial class with `[ClaudiaFunction]` can generate system messages corresponding to Claude's function calling, parsing of replies and function calls, and XML messages of results.
+Claude supports Function Calling. The [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook) provides examples of Function Calling. To achieve this, complex XML generation and parsing processing, as well as execution based on the parsed results, are required.
 
-The description to convey information to Claude is automatically retrieved from the Document Comment.
+With Claudia, you only need to define static methods annotated with `[ClaudiaFunction]`, and the C# Source Generator automatically generates the necessary code, including parsers and system messages.
 
 ```csharp
 public static partial class FunctionTools
 {
-    /// <summary>
-    /// Date of target location.
-    /// </summary>
-    /// <param name="timeZoneId">TimeZone of localtion like 'Tokeyo Standard Time', 'Eastern Standard Time', etc.</param>
-    /// <returns></returns>
-    [ClaudiaFunction]
-    public static DateTime Today(string timeZoneId)
-    {
-        return TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, timeZoneId);
-    }
+    // Sample of anthropic-tools https://github.com/anthropics/anthropic-tools#basetool
 
     /// <summary>
-    /// Sum of two integer parameters.
+    /// Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.
     /// </summary>
-    /// <param name="x">parameter1.</param>
-    /// <param name="y">parameter2.</param>
+    /// <param name="timeZone">The time zone to get the current time for, such as UTC, US/Pacific, Europe/London.</param>
     [ClaudiaFunction]
-    public static int Sum(int x, int y)
+    public static string TimeOfDay(string timeZone)
     {
-        return x + y;
+        var time =  TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, timeZone);
+        return time.ToString("HH:mm:ss");
     }
+}
+```
+
+The `partial class` includes the generated `.SystemPrompt` and `.InvokeAsync(MessageResponse)`.
+
+Function Calling requires two requests to Claude. The flow is as follows: "Initial request to Claude with available tools in System Prompt -> Execute functions based on the message containing the necessary tools -> Include the results in a new message and send another request to Claude."
+
+```csharp
+// `FunctionTools.SystemPrompt` contains the XML used to inform Claude about the available tools.
+// This XML is generated from the method's XML documentation comments.
+/*
+In this environment you have access to a set of tools you can use to answer the user's question.
+...
+You may call them like this:
+...
+Here are the tools available:
+<tools>
+  <tool_description>
+    <tool_name>TimeOfDay</tool_name>
+    <description>Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.</description>
+    <parameters>
+      <parameter>
+        <name>timeZone</name>
+        <type>string</type>
+        <description>The time zone to get the current time for, such as UTC, US/Pacific, Europe/London.</description>
+      </parameter>
+    </parameters>
+  </tool_description>
+</tools>
+*/
+// Console.WriteLine(FunctionTools.SystemPrompt);
+
+var input = new Message { Role = Roles.User, Content = "What time is it in Los Angeles?" };
+var message = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Haiku,
+    MaxTokens = 1024,
+    System = FunctionTools.SystemPrompt, // set generated prompt
+    StopSequences = [StopSequnces.CloseFunctionCalls], // set </function_calls> as stop sequence
+    Messages = [input],
+});
+
+// Claude returns xml to invoke tool
+/*
+<function_calls>
+    <invoke>
+        <tool_name>TimeOfDay</tool_name>
+        <parameters>
+            <timeZone>US/Pacific</timeZone>
+        </parameters>
+    </invoke>
+*/
+// Console.WriteLine(message);
+
+// `FunctionTools.InvokeAsync`, which is automatically generated, parses the function name and parameters from the `MessageResponse`,
+// executes the corresponding function, and generates XML to inform Claude about the function execution results.
+var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
+
+// By passing this message to Claude as the beginning of the Assistant's response,
+// it will provide a continuation that takes into account the function execution results.
+/*
+<function_calls>
+    <invoke>
+        <tool_name>TimeOfDay</tool_name>
+        <parameters>
+            <timeZone>US/Pacific</timeZone>
+        </parameters>
+    </invoke>
+</function_calls>
+<function_results>
+    <result>
+        <tool_name>TimeOfDay</tool_name>
+        <stdout>03:27:03</stdout>
+    </result>
+</function_results>
+*/
+// Console.WriteLine(partialAssistantMessage);
+
+var callResult = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Haiku,
+    MaxTokens = 1024,
+    System = FunctionTools.SystemPrompt,
+    Messages = [
+        input, // User: "What time is it in Los Angeles?"
+        new() { Role = Roles.Assistant, Content = partialAssistantMessage! } // set as Assistant
+    ],
+});
+
+// The current time in Los Angeles (US/Pacific time zone) is 03:36:04.
+Console.WriteLine(callResult);
+```
+
+For the initial request, specifying `StopSequences.CloseFunctionCalls` is efficient. Also, if you want to include your own System Prompt, it's a good idea to concatenate it with the generated SystemPrompt.
+
+The return type of `ClaudiaFunction` can also be specified as `Task<T>` or `ValueTask<T>`. This allows you to execute a variety of tasks, such as HTTP requests or database requests. For example, a function that retrieves the content of a specified webpage can be defined as shown above.
+
+```csharp
+public static partial class FunctionTools
+{
+    // ...
+
+    /// <summary>
+    /// Retrieves the HTML from the specified URL.
+    /// </summary>
+    /// <param name="url">The URL to retrieve the HTML from.</param>
+    [ClaudiaFunction]
+    static async Task<string> GetHtmlFromWeb(string url)
+    {
+        using var client = new HttpClient();
+        return await client.GetStringAsync(url);
+    }
+}
+```
+
+```csharp
+var input = new Message
+{
+    Role = Roles.User,
+    Content = """
+        Could you summarize this page in three line?
+        https://docs.anthropic.com/claude/docs/intro-to-claude
+"""
+};
+
+var message = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Haiku,
+    MaxTokens = 1024,
+    System = FunctionTools.SystemPrompt, // set generated prompt
+    StopSequences = [StopSequnces.CloseFunctionCalls], // set </function_calls> as stop sequence
+    Messages = [input],
+});
+
+var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
+
+var callResult = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Haiku,
+    MaxTokens = 1024,
+    System = FunctionTools.SystemPrompt,
+    Messages = [
+        input,
+        new() { Role = Roles.Assistant, Content = partialAssistantMessage! } // set as Assistant
+    ],
+});
+
+// The page can be summarized in three lines:
+// 1. Claude is a family of large language models developed by Anthropic designed to revolutionize the way you interact with AI.
+// 2. This documentation is designed to help you get the most out of Claude, with clear explanations, examples, best practices, and links to additional resources.
+// 3. Claude excels at a wide variety of tasks involving language, reasoning, analysis, coding, and more, and the documentation covers key capabilities, getting started with prompting, and using the API.
+Console.WriteLine(callResult);
+```
+
+Multiple functions can be defined, and they can be executed multiple times in a single request.
+
+```csharp
+public static partial class FunctionTools
+{
+    [ClaudiaFunction]
+    public static string TimeOfDay(string timeZone) //...
+
+    // Sample of https://github.com/anthropics/anthropic-cookbook/blob/main/function_calling/function_calling.ipynb
 
     /// <summary>
     /// Calculator function for doing basic arithmetic. 
@@ -429,40 +611,39 @@ public static partial class FunctionTools
 }
 ```
 
-For example, use the following Specify the generated `(target partial class).SystemPrompt` as the system prompt and `StopSequnces.CloseFunctionCalls`(`</function_calls>`) as StopSequences.
-
 ```csharp
-var anthropic = new Anthropic();
-
-var userInput = "Please tell me the current time in Tokyo and the current time in the UK." +
-                "Also, while you're at it, please tell me what 1,984,135 * 9,343,116 equals.";
+var input = new Message
+{
+    Role = Roles.User,
+    Content = """
+        What time is it in Seattle and Tokyo?
+        Incidentally multiply 1,984,135 by 9,343,116.
+"""
+};
 
 var message = await anthropic.Messages.CreateAsync(new()
 {
-    Model = Models.Claude3Opus,
+    Model = Models.Claude3Haiku,
     MaxTokens = 1024,
-    System = FunctionTools.SystemPrompt,
-    StopSequences = [StopSequnces.CloseFunctionCalls],
-    Messages = [
-        new() { Role = Roles.User, Content = userInput },
-    ],
+    System = FunctionTools.SystemPrompt, // set generated prompt
+    StopSequences = [StopSequnces.CloseFunctionCalls], // set </function_calls> as stop sequence
+    Messages = [input],
 });
 
 var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
 
-Console.WriteLine(partialAssistantMessage);
-
 var callResult = await anthropic.Messages.CreateAsync(new()
 {
-    Model = Models.Claude3Opus,
+    Model = Models.Claude3Haiku,
     MaxTokens = 1024,
     System = FunctionTools.SystemPrompt,
     Messages = [
-        new() { Role = Roles.User, Content = userInput },
-        new() { Role = Roles.Assistant, Content = partialAssistantMessage! },
+        input,
+        new() { Role = Roles.Assistant, Content = partialAssistantMessage! } // set as Assistant
     ],
 });
 
+// TODO: show requested result
 Console.WriteLine(callResult);
 ```
 

@@ -13,20 +13,57 @@ using System.Xml.Linq;
 
 var anthropic = new Anthropic();
 
-var userInput = """
-Translate and summarize this Japanese site to English.
-https://scrapbox.io/hadashiA/ZLogger_v2%E3%81%AE%E6%96%B0%E3%82%B9%E3%83%88%E3%83%A9%E3%82%AF%E3%83%81%E3%83%A3%E3%83%BC%E3%83%89%E3%83%AD%E3%82%AE%E3%83%B3%E3%82%B0%E4%BD%93%E9%A8%93
-""";
+//var userInput = """
+//Translate and summarize this Japanese site to English.
+//https://scrapbox.io/hadashiA/ZLogger_v2%E3%81%AE%E6%96%B0%E3%82%B9%E3%83%88%E3%83%A9%E3%82%AF%E3%83%81%E3%83%A3%E3%83%BC%E3%83%89%E3%83%AD%E3%82%AE%E3%83%B3%E3%82%B0%E4%BD%93%E9%A8%93
+//""";
+
+//var message = await anthropic.Messages.CreateAsync(new()
+//{
+//    Model = Models.Claude3Haiku,
+//    MaxTokens = 1024,
+//    System = SystemPrompts.Claude3 + "\n" + FunctionTools.SystemPrompt,
+//    StopSequences = [StopSequnces.CloseFunctionCalls],
+//    Messages = [
+//        new() { Role = Roles.User, Content = userInput },
+//    ],
+//});
+
+//var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
+
+//var callResult = await anthropic.Messages.CreateAsync(new()
+//{
+//    Model = Models.Claude3Haiku,
+//    MaxTokens = 1024,
+//    System = SystemPrompts.Claude3 + "\n" + FunctionTools.SystemPrompt + "\n" + "Return message from assistant should be humanreadable so don't use xml tags, <result></result> and json.",
+//    Messages = [
+//        new() { Role = Roles.User, Content = userInput },
+//        new() { Role = Roles.Assistant, Content = partialAssistantMessage! },
+//    ],
+//});
+
+//Console.WriteLine(callResult);
+
+
+
+
+
+var input = new Message
+{
+    Role = Roles.User,
+    Content = """
+        What time is it in Seattle and Tokyo?
+        Incidentally multiply 1,984,135 by 9,343,116.
+"""
+};
 
 var message = await anthropic.Messages.CreateAsync(new()
 {
     Model = Models.Claude3Haiku,
     MaxTokens = 1024,
-    System = SystemPrompts.Claude3 + "\n" + FunctionTools.SystemPrompt,
-    StopSequences = [StopSequnces.CloseFunctionCalls],
-    Messages = [
-        new() { Role = Roles.User, Content = userInput },
-    ],
+    System = FunctionTools.SystemPrompt, // set generated prompt
+    StopSequences = [StopSequnces.CloseFunctionCalls], // set </function_calls> as stop sequence
+    Messages = [input],
 });
 
 var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
@@ -35,36 +72,14 @@ var callResult = await anthropic.Messages.CreateAsync(new()
 {
     Model = Models.Claude3Haiku,
     MaxTokens = 1024,
-    System = SystemPrompts.Claude3 + "\n" + FunctionTools.SystemPrompt + "\n" + "Return message from assistant should be humanreadable so don't use xml tags, <result></result> and json.",
+    System = FunctionTools.SystemPrompt,
     Messages = [
-        new() { Role = Roles.User, Content = userInput },
-        new() { Role = Roles.Assistant, Content = partialAssistantMessage! },
+        input,
+        new() { Role = Roles.Assistant, Content = partialAssistantMessage! } // set as Assistant
     ],
 });
 
 Console.WriteLine(callResult);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //var systemPrompt = """
@@ -308,16 +323,20 @@ Console.WriteLine(callResult);
 
 public static partial class FunctionTools
 {
+    // Sample of anthropic-tools https://github.com/anthropics/anthropic-tools#basetool
+
     /// <summary>
-    /// Date of target location.
+    /// Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.
     /// </summary>
-    /// <param name="timeZoneId">TimeZone of localtion like 'Tokeyo Standard Time', 'Eastern Standard Time', etc.</param>
-    /// <returns></returns>
+    /// <param name="timeZone">The time zone to get the current time for, such as UTC, US/Pacific, Europe/London.</param>
     [ClaudiaFunction]
-    public static DateTime Today(string timeZoneId)
+    public static string TimeOfDay(string timeZone)
     {
-        return TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, timeZoneId);
+        var time = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, timeZone);
+        return time.ToString("HH:mm:ss");
     }
+
+    // Sample of https://github.com/anthropics/anthropic-cookbook/blob/main/function_calling/function_calling.ipynb
 
     /// <summary>
     /// Calculator function for doing basic arithmetic. 
@@ -340,28 +359,15 @@ public static partial class FunctionTools
     }
 
     /// <summary>
-    /// Get html from target url.
+    /// Retrieves the HTML from the specified URL.
     /// </summary>
-    /// <param name="url">Url of public internet for get html.</param>
+    /// <param name="url">The URL to retrieve the HTML from.</param>
     [ClaudiaFunction]
     static async Task<string> GetHtmlFromWeb(string url)
     {
         using var client = new HttpClient();
         return await client.GetStringAsync(url);
     }
-
-    ///// <summary>
-    ///// demo
-    ///// </summary>
-    ///// <param name="ts">t</param>
-    ///// <param name="guid">g</param>
-    ///// <param name="dtofset">o</param>
-    ///// <returns></returns>
-    //[ClaudiaFunction]
-    //static int Demo(TimeSpan ts, Guid guid, DateTimeOffset dtofset)
-    //{
-    //    return 0;
-    //}
 }
 
 
