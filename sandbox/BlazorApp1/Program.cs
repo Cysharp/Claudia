@@ -11,7 +11,7 @@ builder.Services.AddRazorComponents()
 Environment.SetEnvironmentVariable("ANTHROPIC_API_KEY", builder.Configuration["ANTHROPIC_API_KEY"]);
 
 // Add Anthropic Client
-builder.Services.AddScoped<Anthropic>();
+builder.Services.AddSingleton<Anthropic>();
 
 var app = builder.Build();
 

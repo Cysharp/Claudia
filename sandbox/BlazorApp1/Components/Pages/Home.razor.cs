@@ -1,6 +1,7 @@
 ﻿using Claudia;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using System.Text.Json;
 
 namespace BlazorApp1.Components.Pages;
 
@@ -28,7 +29,7 @@ public partial class Home
 
             var stream = Anthropic.Messages.CreateStreamAsync(new()
             {
-                Model = Models.Claude3Sonnet,
+                Model = Models.Claude3Opus,
                 MaxTokens = 1024,
                 Temperature = temperature,
                 System = string.IsNullOrWhiteSpace(systemInput) ? null : systemInput,

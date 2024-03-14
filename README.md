@@ -402,7 +402,22 @@ var message = await anthropic.Messages.CreateAsync(new()
 
 Save / Load
 ---
-TODO:...
+All request and response models can be serialized using `System.Text.Json.JsonSerializer`. Additionally, `AnthropicJsonSerialzierContext` has pre-generated serializers available through Source Generator, enabling even higher performance.
+
+```csharp
+List<Message> chatMessages;
+
+void Save()
+{
+    var json = JsonSerializer.Serialize(chatMessages, AnthropicJsonSerialzierContext.Default.Options);
+    File.WriteAllText("chat.json", json);
+}
+
+void Load()
+{
+    chatMessages = JsonSerializer.Deserialize<List<Message>>("chat.json", AnthropicJsonSerialzierContext.Default.Options)!;
+}
+```
 
 Function Calling
 ---
@@ -643,13 +658,99 @@ var callResult = await anthropic.Messages.CreateAsync(new()
     ],
 });
 
-// TODO: show requested result
+// The time in Seattle (US/Pacific time zone) is 8:06:53.
+// The time in Tokyo (Asia/Tokyo time zone) is 00:06:53.
+// The result of multiplying 1,984,135 by 9,343,116 is 18,524,738,326,760.
 Console.WriteLine(callResult);
 ```
 
 Blazor Sample
 ---
-TODO:
+By using Claudia with Blazor, you can easily create a Chat UI like the one shown below.
+
+![blazorclauderec](https://github.com/Cysharp/Claudia/assets/46207/dfcad512-4cf1-4af0-ba03-901dc7ce36a6)
+
+All the code can be found in [BlazorApp1](https://github.com/Cysharp/Claudia/tree/main/sandbox/BlazorApp1).
+
+The key parts are the setup in `Program.cs` and `Home.razor.cs`.
+
+```csharp
+// Program.cs
+
+// get ANTHROPIC_API_KEY from user secret
+// https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets
+Environment.SetEnvironmentVariable("ANTHROPIC_API_KEY", builder.Configuration["ANTHROPIC_API_KEY"]);
+
+// Add Anthropic Client
+builder.Services.AddSingleton<Anthropic>();
+
+var app = builder.Build();
+```
+
+```csharp
+// Home.razor.cs
+
+using Claudia;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+
+namespace BlazorApp1.Components.Pages;
+
+public partial class Home
+{
+    [Inject]
+    public required Anthropic Anthropic { get; init; }
+
+    double temperature = 1.0;
+    string textInput = "";
+    string systemInput = SystemPrompts.Claude3;
+    List<Message> chatMessages = new();
+
+    bool running = false;
+
+    async Task SendClick()
+    {
+        if (running) return;
+        if (string.IsNullOrWhiteSpace(textInput)) return;
+
+        running = true;
+        try
+        {
+            chatMessages.Add(new() { Role = Roles.User, Content = textInput });
+
+            var stream = Anthropic.Messages.CreateStreamAsync(new()
+            {
+                Model = Models.Claude3Opus,
+                MaxTokens = 1024,
+                Temperature = temperature,
+                System = string.IsNullOrWhiteSpace(systemInput) ? null : systemInput,
+                Messages = chatMessages.ToArray()
+            });
+
+            var currentMessage = new Message { Role = Roles.Assistant, Content = "" };
+            chatMessages.Add(currentMessage);
+
+            textInput = ""; // clear input.
+            StateHasChanged();
+
+            await foreach (var messageStreamEvent in stream)
+            {
+                if (messageStreamEvent is ContentBlockDelta content)
+                {
+                    currentMessage.Content[0].Text += content.Delta.Text;
+                    StateHasChanged();
+                }
+            }
+        }
+        finally
+        {
+            running = false;
+        }
+    }
+}
+```
+
+If you need to store the chat message history, you can serialize `List<Message> chatMessages` to JSON and save it to a file or database.
 
 License
 ---

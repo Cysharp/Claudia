@@ -15,13 +15,13 @@
                 @if (item.Role == Roles.User)
                 {
                     <div class="mb-2">
-                        <span class="font-bold text-blue-500">User:</span> @item.Content[0].Text
+                        <span class="font-bold text-blue-500">User:</span> @((MarkupString)item.Content[0].Text!.Replace("\n", "<br />"))
                     </div>
                 }
                 else
                 {
                     <div class="mb-2">
-                        <span class="font-bold text-green-500">Assistant:</span> @item.Content[0].Text
+                        <span class="font-bold text-green-500">Assistant:</span> @((MarkupString)item.Content[0].Text!.Replace("\n", "<br />"))
                     </div>
                 }
             }
