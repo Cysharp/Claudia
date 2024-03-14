@@ -77,4 +77,12 @@ internal static class DiagnosticDescriptors
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor VoidReturnIsNotSupported = new(
+        id: "CLFG010",
+        title: "void return type is not supported",
+        messageFormat: "The '{0}' method return void or Task or ValueTask there are not supported, allows T, Task<T> or ValueTask<T>",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

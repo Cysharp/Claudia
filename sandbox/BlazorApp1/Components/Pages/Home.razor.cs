@@ -16,7 +16,7 @@ public partial class Home
 
     bool running = false;
 
-    async void SendClick()
+    async Task SendClick()
     {
         if (running) return;
         if (string.IsNullOrWhiteSpace(textInput)) return;
@@ -53,7 +53,6 @@ public partial class Home
         finally
         {
             running = false;
-            StateHasChanged();
         }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -348,6 +349,19 @@ public static partial class FunctionTools
         using var client = new HttpClient();
         return await client.GetStringAsync(url);
     }
+
+    ///// <summary>
+    ///// demo
+    ///// </summary>
+    ///// <param name="ts">t</param>
+    ///// <param name="guid">g</param>
+    ///// <param name="dtofset">o</param>
+    ///// <returns></returns>
+    //[ClaudiaFunction]
+    //static int Demo(TimeSpan ts, Guid guid, DateTimeOffset dtofset)
+    //{
+    //    return 0;
+    //}
 }
 
 

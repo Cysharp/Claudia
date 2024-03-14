@@ -104,6 +104,7 @@ public class Parser
                     }
                 }
 
+                var hasError = false;
                 foreach (var p in method.Parameters)
                 {
                     // castable types
@@ -126,11 +127,25 @@ public class Parser
                         case SpecialType.System_DateTime:
                             break;
                         default:
-                            // TODO: support DateTimeOffset, Guid, TimeSpan and there nullable.
-                            // TODO: void is not allowed.
+                            if (p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) is "global::System.DateTimeOffset" or "global::System.Guid" or "global::System.TimeSpan")
+                            {
+                                break;
+                            }
+
+                            hasError = true;
                             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ParameterTypeIsNotSupported, method.Locations[0], method.Name, p.Name, p.Type.Name));
                             continue;
                     }
+                }
+                if (hasError)
+                {
+                    continue;
+                }
+
+                if (method.ReturnsVoid || (method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) is "global::System.Threading.Tasks.Task" or "global::System.Threading.Tasks.ValueTask"))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.VoidReturnIsNotSupported, method.Locations[0], method.Name));
+                    continue;
                 }
 
                 methods.Add(new Method { Symbol = method, Syntax = (MethodDeclarationSyntax)source.TargetNode });
