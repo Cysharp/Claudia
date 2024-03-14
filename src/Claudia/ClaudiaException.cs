@@ -40,7 +40,7 @@ public enum ErrorCode
     OverloadedError = 529
 }
 
-internal record class ErrorResponseShape
+public record class ErrorResponseShape
 {
     [JsonPropertyName("type")]
     public required string Type { get; init; }
@@ -49,7 +49,7 @@ internal record class ErrorResponseShape
     public required ErrorResponse ErrorResponse { get; init; }
 }
 
-internal record class ErrorResponse
+public record class ErrorResponse
 {
     [JsonPropertyName("type")]
     public required string Type { get; init; }
