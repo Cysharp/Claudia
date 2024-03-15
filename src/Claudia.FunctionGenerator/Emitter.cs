@@ -96,18 +96,17 @@ Again, including multiple <function_calls> tags in the reply is prohibited.
 
     void EmitToolDescription(Method method)
     {
-        var docComment = method.Symbol.GetDocumentationCommentXml();
-        var xml = XElement.Parse(docComment);
+        var docComment = method.Syntax.GetDocumentationCommentTriviaSyntax()!;
 
-        var description = ((string)xml.Element("summary")).Replace("\"", "'").Trim();
+        var description = docComment.GetSummary().Replace("\"", "'");
 
         var parameters = new List<XElement>();
-        foreach (var p in xml.Elements("param"))
+        foreach (var p in docComment.GetParams())
         {
-            var paramDescription = ((string)p).Replace("\"", "'").Trim();
+            var paramDescription = p.Description.Replace("\"", "'");
 
             // type retrieve from method symbol
-            var name = p.Attribute("name").Value.Trim();
+            var name = p.Name;
             var paramType = method.Symbol.Parameters.First(x => x.Name == name).Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
             parameters.Add(new XElement("parameter",

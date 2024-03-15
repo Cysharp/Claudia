@@ -41,7 +41,7 @@ internal static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor MethodNeedsDocumentationCommentXml = new(
         id: "CLFG005",
         title: "Method needs documentation comment xml",
-        messageFormat: "The '{0}' method has no documentation comment, define it and generate it(<GenerateDocumentationFile>true</GenerateDocumentationFile> in PropertyGroup of csproj)",
+        messageFormat: "The '{0}' method has no documentation comment",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

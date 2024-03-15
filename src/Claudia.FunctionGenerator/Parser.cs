@@ -64,16 +64,15 @@ public class Parser
                 // source.TargetNode
                 var method = (IMethodSymbol)source.TargetSymbol;
 
-                var docXml = method.GetDocumentationCommentXml();
-                if (string.IsNullOrWhiteSpace(docXml))
+                var docComment = source.TargetNode.GetDocumentationCommentTriviaSyntax();
+                if (docComment == null)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodNeedsDocumentationCommentXml, method.Locations[0], method.Name));
                     continue;
                 }
                 else
                 {
-                    var xml = XElement.Parse(docXml);
-                    var description = ((string)xml.Element("summary")).Replace("\"", "'").Trim();
+                    var description = docComment.GetSummary().Replace("\"", "'");
                     if (string.IsNullOrWhiteSpace(description))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodNeedsSummary, method.Locations[0], method.Name));
@@ -83,16 +82,16 @@ public class Parser
                     var parameterNames = new HashSet<string>(method.Parameters.Select(x => x.Name));
                     if (parameterNames.Count != 0)
                     {
-                        foreach (var p in xml.Elements("param"))
+                        foreach (var p in docComment.GetParams())
                         {
-                            var desc = (string)p;
+                            var desc = p.Description;
                             if (string.IsNullOrWhiteSpace(desc))
                             {
                                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ParameterNeedsDescription, method.Locations[0], method.Name, p.Name));
                                 continue;
                             }
 
-                            var name = p.Attribute("name").Value.Trim();
+                            var name = p.Name;
                             parameterNames.Remove(name);
                         }
 
