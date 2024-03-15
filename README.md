@@ -549,6 +549,8 @@ public static partial class FunctionTools
     [ClaudiaFunction]
     static async Task<string> GetHtmlFromWeb(string url)
     {
+        // When using this in a real-world application, passing the raw HTML might consume too many tokens.
+        // You can parse the HTML locally using libraries like AngleSharp and convert it into a compact text structure to save tokens.
         using var client = new HttpClient();
         return await client.GetStringAsync(url);
     }
@@ -664,6 +666,10 @@ var callResult = await anthropic.Messages.CreateAsync(new()
 Console.WriteLine(callResult);
 ```
 
+Note that the allowed parameter types are `bool`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `decimal`, `float`, `double`, `string`, `DateTime`, `DateTimeOffset`, `Guid`, and `TimeSpan`.
+
+The return value can be of any type, but it will be converted to a string using `ToString()`. If you want to return a custom string, make the return type `string` and format the string within the function.
+
 Blazor Sample
 ---
 By using Claudia with Blazor, you can easily create a Chat UI like the one shown below.
@@ -751,6 +757,15 @@ public partial class Home
 ```
 
 If you need to store the chat message history, you can serialize `List<Message> chatMessages` to JSON and save it to a file or database.
+
+Unity
+---
+Minimum supported Unity version is `2022.3.12f1`.
+
+You need to install from NuGet. We recommend using [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
+
+
+
 
 License
 ---
