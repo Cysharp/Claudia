@@ -117,6 +117,19 @@ public class Contents : Collection<Content>
         };
         return new Contents { content };
     }
+
+    public override string ToString()
+    {
+        var text = this.SingleOrDefault(x => x.Type == ContentTypes.Text);
+        if (text != null)
+        {
+            return text.Text?.ToString() ?? "";
+        }
+        else
+        {
+            return base.ToString() ?? "";
+        }
+    }
 }
 
 public record class Content
@@ -155,6 +168,22 @@ public record class Content
             MediaType = mediaType,
             Data = data
         };
+    }
+
+    public override string ToString()
+    {
+        if (Text != null)
+        {
+            return Text;
+        }
+        else if (Source != null)
+        {
+            return $"{Source.Type}(Source.Data.Length)";
+        }
+        else
+        {
+            return base.ToString() ?? "";
+        }
     }
 }
 

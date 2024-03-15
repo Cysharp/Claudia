@@ -760,12 +760,140 @@ If you need to store the chat message history, you can serialize `List<Message> 
 
 Unity
 ---
-Minimum supported Unity version is `2022.3.12f1`.
+Minimum supported Unity version is `2022.3.12f1`. You need to install from NuGet. We recommend using [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
 
-You need to install from NuGet. We recommend using [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
+1. Install NuGetForUnity
+2. Open Window from NuGet -> Manage NuGet Packages, Search "Claudia" and Press Install.
 
+With this, you can use the `Anthropic` client in both the Editor and at Runtime.
 
+```csharp
+using Claudia;
+using System;
+using UnityEngine;
 
+public class NewBehaviourScript : MonoBehaviour
+{
+    async void Start()
+    {
+        var anthropic = new Anthropic()
+        {
+            ApiKey = "YOUR API KEY"
+        };
+
+        Debug.Log("Start Simple Call in Unity");
+
+        var message = await anthropic.Messages.CreateAsync(new()
+        {
+            Model = Models.Claude3Opus,
+            MaxTokens = 1024,
+            Messages = new Message[] { new() { Role = "user", Content = "Hello, Claude" } }
+        });
+
+        Debug.Log("User: Hello, Claude");
+        Debug.Log("Assistant: " + message);
+    }
+}
+```
+
+![image](https://github.com/Cysharp/Claudia/assets/46207/1bd9395b-1595-4034-9c40-8e37aa750284)
+
+Source Generators for Function Calling are also supported, but additional work is required.
+
+1. Setup the C# compiler for unity. 
+    - Add a text file named `csc.rsp` with the following contents under your Assets/.
+        - ```
+          -langVersion:10 -nullable
+          ```
+
+2. Setup the C# compiler for your IDE. 
+    - Install [CsprojModifier](https://github.com/Cysharp/CsprojModifier) 
+    - Add a text file named LangVersion.props with the following contents
+        - ```xml
+          <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+            <PropertyGroup>
+              <LangVersion>10</LangVersion>
+              <Nullable>enable</Nullable>
+            </PropertyGroup>
+          </Project>
+          ``` 
+    - Open Project Settings and [C# Project Modifier] section under the [Editor].
+    - Add the .props file you just created, to the list of [Additional project imports].
+    - Note:
+        - If you are using assembly definition, add your additional csproj in the list of [The project to be addef for import].
+
+```csharp
+using Claudia;
+using System;
+using UnityEngine;
+
+public class NewBehaviourScript : MonoBehaviour
+{
+    async void Start()
+    {
+        var anthropic = new Anthropic()
+        {
+            ApiKey = "YOUR API KEY"
+        };
+
+        Debug.Log("Start Function Calling Demo in Unity");
+
+        var input = new Message
+        {
+            Role = Roles.User,
+            Content = "Multiply 1,984,135 by 9,343,116"
+        };
+
+        var message = await anthropic.Messages.CreateAsync(new()
+        {
+            Model = Models.Claude3Haiku,
+            MaxTokens = 1024,
+            System = FunctionTools.SystemPrompt,
+            StopSequences = new[] { StopSequnces.CloseFunctionCalls },
+            Messages = new[] { input },
+        });
+
+        var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
+
+        var callResult = await anthropic.Messages.CreateAsync(new()
+        {
+            Model = Models.Claude3Haiku,
+            MaxTokens = 1024,
+            System = FunctionTools.SystemPrompt,
+            Messages = new[]{
+                input,
+                new() { Role = Roles.Assistant, Content = partialAssistantMessage! }
+            },
+        });
+
+        Debug.Log("User: Multiply 1,984,135 by 9,343,116");
+        Debug.Log("Assistant: " + callResult.ToString().Trim());
+    }
+}
+
+public static partial class FunctionTools
+{
+    /// <summary>
+    /// Calculator function for doing basic arithmetic. 
+    /// Supports addition, subtraction, multiplication
+    /// </summary>
+    /// <param name="firstOperand">First operand (before the operator)</param>
+    /// <param name="secondOperand">Second operand (after the operator)</param>
+    /// <param name="operator">The operation to perform. Must be either +, -, *, or /</param>
+    [ClaudiaFunction]
+    static double DoPairwiseArithmetic(double firstOperand, double secondOperand, string @operator)
+    {
+        return @operator switch
+        {
+            "+" => firstOperand + secondOperand,
+            "-" => firstOperand - secondOperand,
+            "*" => firstOperand * secondOperand,
+            "/" => firstOperand / secondOperand,
+            _ => throw new ArgumentException("Operation not supported")
+        };
+    }
+}
+```
 
 License
 ---
