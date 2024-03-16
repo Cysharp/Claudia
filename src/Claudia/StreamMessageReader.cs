@@ -12,17 +12,19 @@ namespace Claudia;
 internal class StreamMessageReader
 {
     readonly PipeReader reader;
+    readonly bool configureAwait;
     MessageStreamEventKind currentEvent;
 
-    public StreamMessageReader(Stream stream)
+    public StreamMessageReader(Stream stream, bool configureAwait)
     {
         this.reader = PipeReader.Create(stream);
+        this.configureAwait = configureAwait;
     }
 
     public async IAsyncEnumerable<IMessageStreamEvent> ReadMessagesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
     {
     READ_AGAIN:
-        var readResult = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+        var readResult = await reader.ReadAsync(cancellationToken).ConfigureAwait(configureAwait);
 
         if (!(readResult.IsCompleted | readResult.IsCanceled))
         {

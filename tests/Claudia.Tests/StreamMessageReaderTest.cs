@@ -8,6 +8,8 @@ public class StreamMessageReaderTest
     [Fact]
     public async Task Text()
     {
+        SynchronizationContext.SetSynchronizationContext(null);
+
         var data = """
 event: message_start
 data: {"type":"message_start","message":{"id":"msg_014vhGu4v2Rp7tdaPb6LQrTB","type":"message","role":"assistant","content":[],"model":"claude-3-opus-20240229","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":10,"output_tokens":1}}}
@@ -79,7 +81,7 @@ data: {"type":"message_stop"}
 
         var ms = new MemoryStream(Encoding.UTF8.GetBytes(data));
 
-        var reader = new StreamMessageReader(ms);
+        var reader = new StreamMessageReader(ms, true);
 
         var array = await reader.ReadMessagesAsync(CancellationToken.None)
              .ToObservable()
@@ -91,6 +93,8 @@ data: {"type":"message_stop"}
     [Fact]
     public async Task WithNewLine()
     {
+        SynchronizationContext.SetSynchronizationContext(null);
+
         var data = """
 event: message_start
 data: {"type":"message_start","message":{"id":"msg_01WEr6VcJV5vLaFEw4WhL5HD","type":"message","role":"assistant","content":[],"model":"claude-3-opus-20240229","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":19,"output_tokens":1}}}
@@ -150,7 +154,7 @@ data: {"type":"message_stop"}
 
         var ms = new MemoryStream(Encoding.UTF8.GetBytes(data));
 
-        var reader = new StreamMessageReader(ms);
+        var reader = new StreamMessageReader(ms, true);
 
         var array = await reader.ReadMessagesAsync(CancellationToken.None)
              .ToObservable()

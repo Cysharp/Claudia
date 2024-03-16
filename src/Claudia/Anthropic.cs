@@ -36,6 +36,8 @@ public class Anthropic : IMessages, IDisposable
 
     public bool IncludeRequestJsonOnInvalidRequestError { get; init; } = false;
 
+    public bool ConfigureAwait { get; set; } = false;
+
     public HttpClient HttpClient => httpClient;
 
     /// <summary>
@@ -64,20 +66,20 @@ public class Anthropic : IMessages, IDisposable
     async Task<MessageResponse> IMessages.CreateAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
     {
         request.Stream = null;
-        using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
+        using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(ConfigureAwait);
 
-        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<MessageResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(false);
+        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<MessageResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(ConfigureAwait);
         return result!;
     }
 
     async IAsyncEnumerable<IMessageStreamEvent> IMessages.CreateStreamAsync(MessageRequest request, RequestOptions? overrideOptions, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         request.Stream = true;
-        using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(false);
+        using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(ConfigureAwait);
 
-        using var stream = await msg.Content.ReadAsStreamAsync().ConfigureAwait(false);
+        using var stream = await msg.Content.ReadAsStreamAsync().ConfigureAwait(ConfigureAwait);
 
-        var reader = new StreamMessageReader(stream);
+        var reader = new StreamMessageReader(stream, ConfigureAwait);
 
         await foreach (var item in reader.ReadMessagesAsync(cancellationToken))
         {
@@ -188,7 +190,7 @@ public class Anthropic : IMessages, IDisposable
             }
 
             return retryTime;
-        }).ConfigureAwait(false);
+        }).ConfigureAwait(ConfigureAwait);
 
         var statusCode = (int)msg.StatusCode;
 
@@ -197,7 +199,7 @@ public class Anthropic : IMessages, IDisposable
             case 200:
                 return msg!;
             default:
-                var shape = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(false);
+                var shape = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(ConfigureAwait);
 
                 var error = shape!.ErrorResponse;
                 var errorMsg = error.Message;
@@ -222,65 +224,46 @@ public class Anthropic : IMessages, IDisposable
 
             try
             {
-                try
+                var result = await func(state, cts.Token).ConfigureAwait(ConfigureAwait);
+                if (shouldRetry != null)
                 {
-                    var result = await func(state, cts.Token).ConfigureAwait(false);
-                    if (shouldRetry != null)
+                    var retryTime = shouldRetry(result);
+                    if (retryTime != null)
                     {
-                        var retryTime = shouldRetry(result);
-                        if (retryTime != null)
+                        if (retriesRemaining > 0)
                         {
-                            if (retriesRemaining > 0)
+                            if (retryTime.Value == TimeSpan.Zero)
                             {
-                                if (retryTime.Value == TimeSpan.Zero)
-                                {
 #if NETSTANDARD2_1
-                                    var rand = random;
+                                var rand = random;
 #else
-                                    var rand = Random.Shared;
+                                var rand = Random.Shared;
 #endif
-                                    var sleep = CalculateDefaultRetryTimeoutMillis(rand, retriesRemaining, MaxRetries);
-                                    await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    await Task.Delay(retryTime.Value, cancellationToken).ConfigureAwait(false);
-                                }
-                                retriesRemaining--;
-                                goto RETRY;
+                                var sleep = CalculateDefaultRetryTimeoutMillis(rand, retriesRemaining, MaxRetries);
+                                await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(ConfigureAwait);
                             }
+                            else
+                            {
+                                await Task.Delay(retryTime.Value, cancellationToken).ConfigureAwait(ConfigureAwait);
+                            }
+                            retriesRemaining--;
+                            goto RETRY;
                         }
                     }
-                    return result;
                 }
-                catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        throw new OperationCanceledException(ex.Message, ex, cancellationToken);
-                    }
-                    else
-                    {
-                        throw new TimeoutException($"The request was canceled due to the configured Timeout of {Timeout.TotalSeconds} seconds elapsing.", ex);
-                    }
-
-                    throw;
-                }
+                return result;
             }
-            catch
+            catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
             {
-                if (retriesRemaining > 0)
+                if (cancellationToken.IsCancellationRequested)
                 {
-#if NETSTANDARD2_1
-                    var rand = random;
-#else
-                    var rand = Random.Shared;
-#endif
-                    var sleep = CalculateDefaultRetryTimeoutMillis(rand, retriesRemaining, MaxRetries);
-                    await Task.Delay(TimeSpan.FromMilliseconds(sleep), cancellationToken).ConfigureAwait(false);
-                    retriesRemaining--;
-                    goto RETRY;
+                    throw new OperationCanceledException(ex.Message, ex, cancellationToken);
                 }
+                else
+                {
+                    throw new TimeoutException($"The request was canceled due to the configured Timeout of {Timeout.TotalSeconds} seconds elapsing.", ex);
+                }
+
                 throw;
             }
         }

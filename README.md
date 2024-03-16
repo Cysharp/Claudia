@@ -895,6 +895,19 @@ public static partial class FunctionTools
 }
 ```
 
+### WebGL
+
+In environments where using HttpClient for communication fails, such as WebGL, you need to replace the communication layer by using this [**UnityWebRequestHttpMessageHandler.cs**](https://gist.github.com/neuecc/854192b8d176170caf2c53fa7589dc90).
+
+```csharp
+// replace handler to UnityWebRequestHttpMessageHandler
+var anthropic = new Anthropic(new UnityWebRequestHttpMessageHandler())
+{
+    ApiKey = "YOUR API KEY",
+    ConfigureAwait = true // in Unity Environment with UnityWebRequest, true is recommended.
+};
+```
+
 License
 ---
 This library is under the MIT License.
