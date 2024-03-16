@@ -2,7 +2,7 @@
 
 Unofficial [Anthropic Claude API](https://www.anthropic.com/api) client for .NET.
 
-We have built a C# API similar to the official [Python SDK](https://github.com/anthropics/anthropic-sdk-python) and [TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript). It supports netstandard2.1, net6.0, and net8.0. If you want to use it in Unity, please reference it from [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity).
+We have built a C# API similar to the official [Python SDK](https://github.com/anthropics/anthropic-sdk-python) and [TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript). It supports netstandard2.1, net6.0, and net8.0.
 
 In addition to the pure client SDK, it also includes a C# Source Generator for performing Function Calling, similar to [anthropic-tools](https://github.com/anthropics/anthropic-tools/).
 
@@ -11,6 +11,8 @@ Installation
 This library is distributed via NuGet, supporting .NET Standard 2.1, .NET 6(.NET 7) and .NET 8 or above.
 
 > PM> Install-Package [Claudia](https://www.nuget.org/packages/Claudia)
+
+It can also be used with Unity Game Engine both Runtime and Editor. For instructions on how to use it, please refer to the [Unity section](#unity).
 
 Usage
 ---
