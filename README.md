@@ -312,6 +312,75 @@ You can change the `HttpClient.BaseAddress` to change the API address(e.g., for 
 anthropic.HttpClient.BaseAddress = new Uri("http://myproxy/");
 ```
 
+### Accessing raw Response data (e.g., headers)
+
+By defining a `DelegatingHandler` in accordance with the HttpClient convention, it is possible to hook into the request pipeline before and after the request. This allows for logging, adding telemetry, and checking response header information. Upon observing the headers, you can see that additional information related to RateLimit is included.
+
+![image](https://github.com/Cysharp/Claudia/assets/46207/3736c91b-144d-4dfd-9292-1b7ce95b7273)
+
+Let's create a DelegatingHandler that retrieves this information and throws a special exception with the RateLimit information when a RateLimit occurs.
+
+```csharp
+public class RateLimitDetailsHandler : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var response = await base.SendAsync(request, cancellationToken);
+
+        if ((int)response.StatusCode == (int)ErrorCode.RateLimitError)
+        {
+            var requestLimit = int.Parse(response.Headers.GetValues("anthropic-ratelimit-requests-limit").First());
+            var requestRemaining = int.Parse(response.Headers.GetValues("anthropic-ratelimit-requests-remaining").First());
+            var requestReset = DateTime.Parse(response.Headers.GetValues("anthropic-ratelimit-requests-reset").First());
+            var tokenLimit = int.Parse(response.Headers.GetValues("anthropic-ratelimit-tokens-limit").First());
+            var tokenRemaining = int.Parse(response.Headers.GetValues("anthropic-ratelimit-tokens-remaining").First());
+            var tokenReset = DateTime.Parse(response.Headers.GetValues("anthropic-ratelimit-tokens-reset").First());
+
+            var error = await response.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerialzierContext.Default.Options, cancellationToken);
+            var message = error!.ErrorResponse.Message;
+
+            throw new AnthropicRateLimitException(requestLimit, requestRemaining, requestReset, tokenLimit, tokenRemaining, tokenReset, message);
+        }
+
+        return response;
+    }
+}
+
+public class AnthropicRateLimitException : Exception
+{
+    public int RateLimitRequestsLimit { get; }
+    public int RateLimitRequestsRemaining { get; }
+    public DateTime RateLimitRequestsReset { get; }
+    public int RateLimitTokensLimit { get; }
+    public int RateLimitTokensRemaining { get; }
+    public DateTime RateLimitTokensReset { get; }
+
+
+    public AnthropicRateLimitException(
+        int rateLimitRequestsLimit,
+        int rateLimitRequestsRemaining,
+        DateTime rateLimitRequestsReset,
+        int rateLimitTokensLimit,
+        int rateLimitTokensRemaining,
+        DateTime rateLimitTokensReset,
+        string message) : base(message)
+    {
+        RateLimitRequestsLimit = rateLimitRequestsLimit;
+        RateLimitRequestsRemaining = rateLimitRequestsRemaining;
+        RateLimitRequestsReset = rateLimitRequestsReset;
+        RateLimitTokensLimit = rateLimitTokensLimit;
+        RateLimitTokensRemaining = rateLimitTokensRemaining;
+        RateLimitTokensReset = rateLimitTokensReset;
+    }
+}
+```
+
+The DelegatingHandler (HttpMessageHandler) can be passed to the constructor of `Anthropic`.
+
+```csharp
+var anthropic = new Anthropic(new RateLimitDetailsHandler() { InnerHandler = new HttpClientHandler() });
+```
+
 Upload File
 ---
 `Message.Content` accepts multiple `Content` objects. However, if a single string is passed, it is automatically converted into an array of text.
@@ -899,7 +968,7 @@ public static partial class FunctionTools
 
 ### WebGL
 
-In environments where using HttpClient for communication fails, such as WebGL, you need to replace the communication layer by using this [**UnityWebRequestHttpMessageHandler.cs**](https://gist.github.com/neuecc/854192b8d176170caf2c53fa7589dc90).
+In environments where using HttpClient for communication fails, such as WebGL, you need to replace the transport layer by using this [**UnityWebRequestHttpMessageHandler.cs**](https://gist.github.com/neuecc/854192b8d176170caf2c53fa7589dc90).
 
 ```csharp
 // replace handler to UnityWebRequestHttpMessageHandler
