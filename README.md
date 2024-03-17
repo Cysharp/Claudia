@@ -979,6 +979,8 @@ var anthropic = new Anthropic(new UnityWebRequestHttpMessageHandler())
 };
 ```
 
+However, to make API calls in a browser environment, you need to set up a proxy or take other measures to support CORS.
+
 License
 ---
 This library is under the MIT License.
