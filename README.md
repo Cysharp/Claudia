@@ -14,6 +14,8 @@ This library is distributed via NuGet, supporting .NET Standard 2.1, .NET 6(.NET
 
 It can also be used with Unity Game Engine both Runtime and Editor. For instructions on how to use it, please refer to the [Unity section](#unity).
 
+You can also use it with AWS Bedrock. Check the [AWS Bedrock section](#aws-bedrock) for more details.
+
 Usage
 ---
 For details about the API, please check the [official API reference](https://docs.anthropic.com/claude/reference/getting-started-with-the-api).
@@ -828,6 +830,67 @@ public partial class Home
 ```
 
 If you need to store the chat message history, you can serialize `List<Message> chatMessages` to JSON and save it to a file or database.
+
+AWS Bedrock
+---
+We provide support for the [Anthropic Bedrock API](https://aws.amazon.com/bedrock/claude/) through a separate package.
+
+> PM> Install-Package [Claudia.Bedrock](https://www.nuget.org/packages/Claudia.Bedrock)
+
+To create an `AmazonBedrockRuntimeClient` from the AWS SDK and specify the Bedrock Model ID using `UseAnthropic`, set the Model property of RequestMessage to `anthropic_version`. The rest is the same as a regular Anthropic Client.
+
+```csharp
+// credentials is your own
+AWSConfigs.AWSProfileName = "";
+
+var bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.USEast1);
+var anthropic = bedrock.UseAnthropic("anthropic.claude-3-haiku-20240307-v1:0"); // Model Id
+
+var response = await anthropic.Messages.CreateAsync(new()
+{
+   Model = "bedrock-2023-05-31", // anthropic_version
+   MaxTokens = 1024,
+   Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+});
+
+Console.WriteLine(response);
+```
+
+Streaming Messages work in the same way.
+
+```csharp
+var stream = anthropic.Messages.CreateStreamAsync(new()
+{
+    Model = "bedrock-2023-05-31", // anthropic_version
+    MaxTokens = 1024,
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+});
+
+await foreach (var item in stream)
+{
+    Console.WriteLine(item);
+}
+```
+
+If you need the raw response, call `InvokeModelAsync` or `InvokeModelWithResponseStreamAsync` instead. This allows you to check the status code and headers before retrieving the result with `GetMessageResponse` or `GetMessageResponseAsync`.
+
+```csharp
+var bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.USEast1);
+
+// (string modelId, MessageRequest request)
+var response = await bedrock.InvokeModelAsync("anthropic.claude-3-haiku-20240307-v1:0", new()
+{
+    Model = "bedrock-2023-05-31", // anthropic_version
+    MaxTokens = 1024,
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+});
+
+Console.WriteLine(response.ResponseMetadata.RequestId);
+
+var responseMessage = response.GetMessageResponse();
+
+Console.WriteLine(responseMessage);
+```
 
 Unity
 ---

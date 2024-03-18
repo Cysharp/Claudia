@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.1;net6.0;net8.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>12</LangVersion>
+		<RootNamespace>Claudia</RootNamespace>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoWarn>1701;1702;1591;1573</NoWarn>
+
+		<!-- NuGet Packaging -->
+		<PackageTags>ai;</PackageTags>
+		<Description>AWS Bedrock support for Claudia.</Description>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\Icon.png" Pack="true" PackagePath="/" />
+		<EmbeddedResource Include="..\..\LICENSE" />
+
+		<PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.301.47" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Claudia\Claudia.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="PolySharp" Version="1.13.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup Condition="$(TargetFramework) == 'netstandard2.1'">
+		<PackageReference Include="System.Threading.Channels" Version="8.0.0" />
+	</ItemGroup>
+
+	<ItemGroup Condition="$(TargetFramework) == 'net6.0' Or $(TargetFramework) == 'netstandard2.1'">
+		<PackageReference Include="System.Text.Json" Version="8.0.0" />
+	</ItemGroup>
+</Project>
