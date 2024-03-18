@@ -1,5 +1,6 @@
 ﻿using Amazon.BedrockRuntime;
 using Amazon.BedrockRuntime.Model;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace Claudia;
@@ -15,9 +16,13 @@ public class BedrockAnthropicClient(AmazonBedrockRuntimeClient client, string mo
         return response.GetMessageResponse();
     }
 
-    IAsyncEnumerable<IMessageStreamEvent> IMessages.CreateStreamAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
+    async IAsyncEnumerable<IMessageStreamEvent> IMessages.CreateStreamAsync(MessageRequest request, RequestOptions? overrideOptions, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var response = await client.InvokeModelWithResponseStreamAsync(modelId, request, cancellationToken);
+        await foreach (var item in response.GetMessageResponseAsync(cancellationToken))
+        {
+            yield return item;
+        }
     }
 }
 
@@ -35,7 +40,18 @@ public static class BedrockExtensions
             ModelId = modelId,
             Accept = "application/json",
             ContentType = "application/json",
-            Body = Serialize(request, stream: null),
+            Body = Serialize(request),
+        }, cancellationToken);
+    }
+
+    public static Task<InvokeModelWithResponseStreamResponse> InvokeModelWithResponseStreamAsync(this AmazonBedrockRuntimeClient client, string modelId, MessageRequest request, CancellationToken cancellationToken = default)
+    {
+        return client.InvokeModelWithResponseStreamAsync(new Amazon.BedrockRuntime.Model.InvokeModelWithResponseStreamRequest
+        {
+            ModelId = modelId,
+            Accept = "application/json",
+            ContentType = "application/json",
+            Body = Serialize(request),
         }, cancellationToken);
     }
 
@@ -56,10 +72,15 @@ public static class BedrockExtensions
         }
     }
 
-    static MemoryStream Serialize(MessageRequest request, bool? stream)
+    public static IAsyncEnumerable<IMessageStreamEvent> GetMessageResponseAsync(this InvokeModelWithResponseStreamResponse response, CancellationToken cancellationToken = default)
+    {
+        return ResponseStreamReader.ToAsyncEnumerable(response.Body, cancellationToken);
+    }
+
+    static MemoryStream Serialize(MessageRequest request)
     {
         var ms = new MemoryStream();
-        var model = ConvertToBedrockModel(request, stream);
+        var model = ConvertToBedrockModel(request);
 
         JsonSerializer.Serialize(ms, model, BedrockAnthropicJsonSerialzierContext.Options);
 
@@ -68,7 +89,7 @@ public static class BedrockExtensions
         return ms;
     }
 
-    static BedrockMessageRequest ConvertToBedrockModel(MessageRequest request, bool? stream)
+    static BedrockMessageRequest ConvertToBedrockModel(MessageRequest request)
     {
         return new BedrockMessageRequest
         {
@@ -81,7 +102,6 @@ public static class BedrockExtensions
             Temperature = request.Temperature,
             TopK = request.TopK,
             TopP = request.TopP,
-            Stream = stream
         };
     }
 }
