@@ -1,4 +1,4 @@
-﻿using Amazon;
+using Amazon;
 using Amazon.BedrockRuntime;
 using Claudia;
 
@@ -6,7 +6,7 @@ using Claudia;
 AWSConfigs.AWSProfileName = "";
 
 var bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.USEast1);
-var anthropic = bedrock.UseAnthropic("anthropic.claude-3-sonnet-20240229-v1:0");
+var anthropic = bedrock.UseAnthropic("anthropic.claude-3-haiku-20240307-v1:0");
 
 var response = await anthropic.Messages.CreateAsync(new()
 {
