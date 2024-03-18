@@ -12,4 +12,9 @@
     <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.300.59" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Claudia.Bedrock\Claudia.Bedrock.csproj" />
+    <ProjectReference Include="..\..\src\Claudia\Claudia.csproj" />
+  </ItemGroup>
+
 </Project>

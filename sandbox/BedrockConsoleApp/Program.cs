@@ -1,12 +1,19 @@
 ﻿using Amazon;
 using Amazon.BedrockRuntime;
+using Amazon.BedrockRuntime.Model;
 using Amazon.Util;
+using Claudia;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 // credentials is your own
-AWSConfigs.AWSProfileName = "<your-profile>";
+AWSConfigs.AWSProfileName = "";
 
 var bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.USEast1);
+
 
 var input = """
         What time is it in Seattle and Tokyo?
@@ -25,12 +32,18 @@ var payload = new JsonObject()
         })
         }
     }.ToJsonString();
-var response = await bedrock.InvokeModelAsync(new Amazon.BedrockRuntime.Model.InvokeModelRequest
+
+
+
+
+
+
+
+var response = await bedrock.InvokeModelAsync("anthropic.claude-3-sonnet-20240229-v1:0", new()
 {
-    ModelId = "anthropic.claude-3-sonnet-20240229-v1:0",
-    Accept = "application/json",
-    ContentType = "application/json",
-    Body = AWSSDKUtils.GenerateMemoryStreamFromString(payload),
+    Model = "bedrock-2023-05-31",
+    MaxTokens = 1024,
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
 });
 
 if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
@@ -38,3 +51,6 @@ if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
 
 var resBody = await JsonNode.ParseAsync(response.Body);
 Console.WriteLine(resBody);
+
+
+

@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Claudia</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.301.47" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Claudia\Claudia.csproj" />
+	</ItemGroup>
+
+</Project>
