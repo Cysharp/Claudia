@@ -23,7 +23,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Claudia.FunctionGenerator.T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BedrockConsoleApp", "sandbox\BedrockConsoleApp\BedrockConsoleApp.csproj", "{79C84272-E0AB-4918-9454-B0AEA9CBE40A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Claudia.Bedrock", "src\Claudia.Bedrock\Claudia.Bedrock.csproj", "{9EC270A6-6E6F-44CF-8A4C-975A2A7344AA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Claudia.Bedrock", "src\Claudia.Bedrock\Claudia.Bedrock.csproj", "{9EC270A6-6E6F-44CF-8A4C-975A2A7344AA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BedrockBlazorApp1", "sandbox\BedrockBlazorApp1\BedrockBlazorApp1.csproj", "{81ED7CB8-1357-4D6E-A54F-4BB07955EFD5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{9EC270A6-6E6F-44CF-8A4C-975A2A7344AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EC270A6-6E6F-44CF-8A4C-975A2A7344AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9EC270A6-6E6F-44CF-8A4C-975A2A7344AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81ED7CB8-1357-4D6E-A54F-4BB07955EFD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81ED7CB8-1357-4D6E-A54F-4BB07955EFD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81ED7CB8-1357-4D6E-A54F-4BB07955EFD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81ED7CB8-1357-4D6E-A54F-4BB07955EFD5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -76,6 +82,7 @@ Global
 		{89A58A08-F553-4CEA-A2A8-783009501E05} = {1B4BD6F6-8528-4409-BA55-085DA5486D36}
 		{79C84272-E0AB-4918-9454-B0AEA9CBE40A} = {E61BFC87-2B96-4699-9B69-EE4B008AE0A0}
 		{9EC270A6-6E6F-44CF-8A4C-975A2A7344AA} = {B54A8855-F8F0-4015-80AA-86974E65AC2D}
+		{81ED7CB8-1357-4D6E-A54F-4BB07955EFD5} = {E61BFC87-2B96-4699-9B69-EE4B008AE0A0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B7CEBA02-BB0C-4102-AE58-DFD114C3192A}

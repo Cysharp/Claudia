@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<IsPackable>false</IsPackable>
+		<UserSecretsId>ce2f09c8-e783-4af2-b9f1-8226c422040c</UserSecretsId>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.301.47" />
+		<PackageReference Include="AWSSDK.SecurityToken" Version="3.7.300.59" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Claudia.Bedrock\Claudia.Bedrock.csproj" />
+		<ProjectReference Include="..\..\src\Claudia\Claudia.csproj" />
+	</ItemGroup>
+
+</Project>

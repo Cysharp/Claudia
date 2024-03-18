@@ -1,0 +1,95 @@
+﻿@page "/"
+@using Claudia
+@rendermode InteractiveServer
+
+<PageTitle>Blazor Claude</PageTitle>
+
+<div class="flex flex-col relative h-full w-full overflow-auto transition-width">
+
+    <div class="flex-0 text-base font-bold mt-4 text-center">Blazor Claude</div>
+
+    <div class="flex-1 text-sm p-4">
+        <div class="p-4 h-full border bg-white rounded-md overflow-y-auto">
+            @foreach (var item in chatMessages)
+            {
+                @if (item.Role == Roles.User)
+                {
+                    <div class="mb-2">
+                        <span class="font-bold text-blue-500">User:</span> @((MarkupString)item.Content[0].Text!.Replace("\n", "<br />"))
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-2">
+                        <span class="font-bold text-green-500">Assistant:</span> @((MarkupString)item.Content[0].Text!.Replace("\n", "<br />"))
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="flex-0 bg-white p-2 border-t-2">
+        <div class="flex w-full mb-2">
+            <div class="flex-0 mr-2 relative">
+                <div class="block text-sm font-medium leading-6 text-gray-900">Temperature</div>
+                <input onmouseover="" class="range_slider w-full h-1 mb-6 bg-gray-200 rounded-lg appearance-none cursor-pointer range-sm dark:bg-gray-700" type="range" min="0.0" max="1.0" step=0.1 value=@temperature>
+                <span class="range_bubble">@temperature</span>
+            </div>
+            <div class="flex-1">
+                <div class="block text-sm font-medium leading-6 text-gray-900">System</div>
+                <textarea type="text" class="block w-full rounded-md border-0 py-1.5 text-sm leading-6 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
+                          @bind="systemInput" />
+            </div>
+        </div>
+        <div class="w-full">
+            <form class="flex" @onsubmit=SendClick>
+                <input type="text" id="chat-input" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 text-sm leading-6" placeholder=" Enter Message..." autocomplete="off" @bind="textInput">
+                <button class="ml-2 mt-0 w-auto inline-flex items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" disabled="@running">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    button:disabled {
+        background-color: rgb(179 179 179);
+    }
+
+    .range_bubble {
+        background-color: #333;
+        color: #fff;
+        position: absolute;
+        bottom: 0px;
+        left: 0px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        z-index: 10;
+        display: none;
+    }
+</style>
+
+<script>
+    var rangeInput = document.querySelector(".range_slider");
+    var rangeBubble = document.querySelector(".range_bubble");
+
+    rangeInput.addEventListener("input", () => {
+        setBubble(rangeInput, rangeBubble);
+    });
+    rangeInput.addEventListener("mouseover", () => {
+        setBubble(rangeInput, rangeBubble);
+    });
+    rangeInput.addEventListener("mouseleave", () => {
+        rangeBubble.style.display = "none";
+    });
+
+    function setBubble(range, bubble) {
+        var val = range.value;
+        var min = range.min ? range.min : 0;
+        var max = range.max ? range.max : 100;
+        var newVal = Number(((val - min) * 100) / (max - min));
+        bubble.innerHTML = val;
+        bubble.style.left = `calc(${newVal}% + (${-5 - newVal * 0.15}px))`;
+        rangeBubble.style.display = "inline-block";
+    }
+</script>
