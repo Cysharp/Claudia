@@ -18,7 +18,7 @@ using ThirdParty.Json.LitJson;
 
 
 // credentials is your own
-AWSConfigs.AWSProfileName = "cysharp-sandbox";
+AWSConfigs.AWSProfileName = "";
 
 var bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.USEast1);
 var anthropic = bedrock.UseAnthropic("anthropic.claude-3-haiku-20240307-v1:0");
