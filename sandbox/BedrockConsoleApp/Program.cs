@@ -1,4 +1,4 @@
-﻿using Amazon;
+using Amazon;
 using Amazon.BedrockRuntime;
 using Amazon.BedrockRuntime.Model;
 using Amazon.BedrockRuntime.Model.Internal.MarshallTransformations;
