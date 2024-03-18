@@ -20,8 +20,8 @@ using ThirdParty.Json.LitJson;
 // credentials is your own
 AWSConfigs.AWSProfileName = "";
 
-var bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.USEast1);
-var anthropic = bedrock.UseAnthropic("anthropic.claude-3-haiku-20240307-v1:0");
+//var bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.USEast1);
+//var anthropic = bedrock.UseAnthropic("anthropic.claude-3-haiku-20240307-v1:0");
 
 //var response = await anthropic.Messages.CreateAsync(new()
 //{
@@ -33,16 +33,31 @@ var anthropic = bedrock.UseAnthropic("anthropic.claude-3-haiku-20240307-v1:0");
 //Console.WriteLine(response);
 
 
-var stream = anthropic.Messages.CreateStreamAsync(new()
+//var stream = anthropic.Messages.CreateStreamAsync(new()
+//{
+//    Model = "bedrock-2023-05-31",
+//    MaxTokens = 1024,
+//    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
+//});
+
+//await foreach (var item in stream)
+//{
+//    Console.WriteLine(item);
+//}
+
+
+var bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.USEast1);
+
+// (string modelId, MessageRequest request)
+var response = await bedrock.InvokeModelAsync("anthropic.claude-3-haiku-20240307-v1:0", new()
 {
-    Model = "bedrock-2023-05-31",
+    Model = "bedrock-2023-05-31", // anthropic_version
     MaxTokens = 1024,
     Messages = [new() { Role = "user", Content = "Hello, Claude" }]
 });
 
-await foreach (var item in stream)
-{
-    Console.WriteLine(item);
-}
+Console.WriteLine(response.ResponseMetadata.RequestId);
 
+var responseMessage = response.GetMessageResponse();
 
+Console.WriteLine(responseMessage);
