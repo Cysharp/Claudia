@@ -1,20 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.301.47" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.300.59" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.301.47" />
+		<PackageReference Include="AWSSDK.SecurityToken" Version="3.7.300.59" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Claudia.Bedrock\Claudia.Bedrock.csproj" />
-    <ProjectReference Include="..\..\src\Claudia\Claudia.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Claudia.Bedrock\Claudia.Bedrock.csproj" />
+		<ProjectReference Include="..\..\src\Claudia\Claudia.csproj" />
+	</ItemGroup>
 
 </Project>
