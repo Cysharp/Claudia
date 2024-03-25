@@ -29,7 +29,7 @@ public partial class Home
 
             var stream = Anthropic.Messages.CreateStreamAsync(new()
             {
-                Model = Models.Claude3Opus,
+                Model = Models.Claude3Haiku,
                 MaxTokens = 1024,
                 Temperature = temperature,
                 System = string.IsNullOrWhiteSpace(systemInput) ? null : systemInput,
