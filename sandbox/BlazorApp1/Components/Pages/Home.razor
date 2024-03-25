@@ -32,7 +32,7 @@
         <div class="flex w-full mb-2">
             <div class="flex-0 mr-2 relative">
                 <div class="block text-sm font-medium leading-6 text-gray-900">Temperature</div>
-                <input onmouseover="" class="range_slider w-full h-1 mb-6 bg-gray-200 rounded-lg appearance-none cursor-pointer range-sm dark:bg-gray-700" type="range" min="0.0" max="1.0" step=0.1 value=@temperature>
+                <input class="range_slider w-full h-1 mb-6 bg-gray-200 rounded-lg appearance-none cursor-pointer range-sm dark:bg-gray-700" type="range" min="0.0" max="1.0" step=0.1 @bind=@temperature @bind:event="oninput">
                 <span class="range_bubble">@temperature</span>
             </div>
             <div class="flex-1">
