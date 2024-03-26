@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 
 namespace Claudia;
@@ -68,7 +69,7 @@ public class Anthropic : IMessages, IDisposable
         request.Stream = null;
         using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(ConfigureAwait);
 
-        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<MessageResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(ConfigureAwait);
+        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct, _) => x.Content.ReadFromJsonAsync<MessageResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(ConfigureAwait);
         return result!;
     }
 
@@ -77,7 +78,11 @@ public class Anthropic : IMessages, IDisposable
         request.Stream = true;
         using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(ConfigureAwait);
 
+#if NETSTANDARD
         using var stream = await msg.Content.ReadAsStreamAsync().ConfigureAwait(ConfigureAwait);
+#else
+        using var stream = await msg.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(ConfigureAwait);
+#endif
 
         var reader = new StreamMessageReader(stream, ConfigureAwait);
 
@@ -98,7 +103,7 @@ public class Anthropic : IMessages, IDisposable
         }
 
         // use ResponseHeadersRead to ignore buffering response.
-        var msg = await RequestWithAsync((httpClient, (bytes, requestUri, overrideOptions, ApiKey)), cancellationToken, overrideOptions, static (x, ct) =>
+        var msg = await RequestWithAsync((httpClient, (bytes, requestUri, overrideOptions, ApiKey)), cancellationToken, overrideOptions, static (x, ct, _) =>
         {
             // for retry, create new HttpRequestMessage per request.
             var state = x.Item2;
@@ -199,21 +204,40 @@ public class Anthropic : IMessages, IDisposable
             case 200:
                 return msg!;
             default:
-                var shape = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct) => x.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(ConfigureAwait);
-
-                var error = shape!.ErrorResponse;
-                var errorMsg = error.Message;
-                var code = (ErrorCode)statusCode;
-                if (code == ErrorCode.InvalidRequestError && IncludeRequestJsonOnInvalidRequestError)
+                using (msg)
                 {
-                    errorMsg += ". Request: " + JsonSerializer.Serialize(request, AnthropicJsonSerialzierContext.Default.Options);
+                    var shape = await RequestWithAsync(msg, cancellationToken, overrideOptions, static async (x, ct, configureAwait) =>
+                    {
+                        // for debuggability when fails deserialize(server returns invalid error data), alloc data first.
+#if NETSTANDARD
+                        var responseData = await x.Content.ReadAsByteArrayAsync().ConfigureAwait(configureAwait);
+#else
+                        var responseData = await x.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(configureAwait);
+#endif
+                        try
+                        {
+                            return JsonSerializer.Deserialize<ErrorResponseShape>(responseData, AnthropicJsonSerialzierContext.Default.Options);
+                        }
+                        catch
+                        {
+                            throw new InvalidOperationException($"Response data is invalid error json. Data: + {Encoding.UTF8.GetString(responseData)}");
+                        }
+                    }, null).ConfigureAwait(ConfigureAwait);
+
+                    var error = shape!.ErrorResponse;
+                    var errorMsg = error.Message;
+                    var code = (ErrorCode)statusCode;
+                    if (code == ErrorCode.InvalidRequestError && IncludeRequestJsonOnInvalidRequestError)
+                    {
+                        errorMsg += ". Request: " + JsonSerializer.Serialize(request, AnthropicJsonSerialzierContext.Default.Options);
+                    }
+                    throw new ClaudiaException((ErrorCode)statusCode, error.Type, errorMsg);
                 }
-                throw new ClaudiaException((ErrorCode)statusCode, error.Type, errorMsg);
         }
     }
 
     // with Cancel, Timeout, Retry.
-    async Task<TResult> RequestWithAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, Func<TState, CancellationToken, Task<TResult>> func, Func<TResult, TimeSpan?>? shouldRetry)
+    async Task<TResult> RequestWithAsync<TResult, TState>(TState state, CancellationToken cancellationToken, RequestOptions? overrideOptions, Func<TState, CancellationToken, bool, Task<TResult>> func, Func<TResult, TimeSpan?>? shouldRetry)
     {
         var retriesRemaining = (shouldRetry == null) ? 0 : (overrideOptions?.MaxRetries ?? MaxRetries);
         var timeout = overrideOptions?.Timeout ?? Timeout;
@@ -224,7 +248,7 @@ public class Anthropic : IMessages, IDisposable
 
             try
             {
-                var result = await func(state, cts.Token).ConfigureAwait(ConfigureAwait);
+                var result = await func(state, cts.Token, ConfigureAwait).ConfigureAwait(ConfigureAwait);
                 if (shouldRetry != null)
                 {
                     var retryTime = shouldRetry(result);
