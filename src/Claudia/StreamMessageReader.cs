@@ -35,7 +35,6 @@ internal class StreamMessageReader : IDisposable
                     yield break;
                 }
             }
-
         }
     }
 
