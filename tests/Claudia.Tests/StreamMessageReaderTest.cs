@@ -81,7 +81,7 @@ data: {"type":"message_stop"}
 
         var ms = new MemoryStream(Encoding.UTF8.GetBytes(data));
 
-        var reader = new StreamMessageReader(ms, true);
+        using var reader = new StreamMessageReader(ms, true);
 
         var array = await reader.ReadMessagesAsync(CancellationToken.None)
              .ToObservable()
@@ -154,7 +154,7 @@ data: {"type":"message_stop"}
 
         var ms = new MemoryStream(Encoding.UTF8.GetBytes(data));
 
-        var reader = new StreamMessageReader(ms, true);
+        using var reader = new StreamMessageReader(ms, true);
 
         var array = await reader.ReadMessagesAsync(CancellationToken.None)
              .ToObservable()

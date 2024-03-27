@@ -9,8 +9,8 @@ namespace BedrockBlazorApp1.Components.Pages;
 public partial class Home
 {
     [Inject]
-    public AmazonBedrockRuntimeClient BedrockClient { get; init; }
-    private BedrockAnthropicClient anthropic;
+    public required AmazonBedrockRuntimeClient BedrockClient { get; init; }
+    private BedrockAnthropicClient anthropic = default!;
 
     double temperature = 1.0;
     string textInput = "";

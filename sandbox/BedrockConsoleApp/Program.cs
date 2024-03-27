@@ -7,7 +7,6 @@ using Claudia;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Formats.Asn1;
-using System.IO.Pipelines;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ObjectiveC;
