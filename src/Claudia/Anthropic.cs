@@ -84,7 +84,7 @@ public class Anthropic : IMessages, IDisposable
         using var stream = await msg.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(ConfigureAwait);
 #endif
 
-        var reader = new StreamMessageReader(stream, ConfigureAwait);
+        using var reader = new StreamMessageReader(stream, ConfigureAwait);
 
         await foreach (var item in reader.ReadMessagesAsync(cancellationToken))
         {
