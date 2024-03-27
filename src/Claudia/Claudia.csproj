@@ -29,7 +29,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Utf8StreamReader" Version="0.0.4" />
+		<PackageReference Include="Utf8StreamReader" Version="1.0.0" />
 	</ItemGroup>
 
 	<ItemGroup Condition="$(TargetFramework) == 'net6.0' Or $(TargetFramework) == 'netstandard2.1'">
