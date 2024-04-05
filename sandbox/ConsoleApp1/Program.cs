@@ -46,25 +46,27 @@ var anthropic = new Anthropic();
 
 
 
-
+anthropic.HttpClient.DefaultRequestHeaders.Add("anthropic-beta", "tools-2024-04-04");
 
 var input = new Message
 {
     Role = Roles.User,
-    Content = """
-        What time is it in Seattle and Tokyo?
-        Incidentally multiply 1,984,135 by 9,343,116.
-"""
+    Content = "What time is it in Tokyo?",
 };
 
 var message = await anthropic.Messages.CreateAsync(new()
 {
     Model = Models.Claude3Haiku,
     MaxTokens = 1024,
-    System = FunctionTools.SystemPrompt, // set generated prompt
-    StopSequences = [StopSequnces.CloseFunctionCalls], // set </function_calls> as stop sequence
+
+    //System = FunctionTools.SystemPrompt, // set generated prompt
+    //StopSequences = [StopSequnces.CloseFunctionCalls], // set </function_calls> as stop sequence
+
+    Tools = [FunctionTools.PromptXml.Tools.TimeOfDay],
     Messages = [input],
 });
+
+
 
 var partialAssistantMessage = await FunctionTools.InvokeAsync(message);
 

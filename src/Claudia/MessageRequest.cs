@@ -90,6 +90,11 @@ public record class MessageRequest
     {
         return JsonSerializer.Serialize(this, AnthropicJsonSerialzierContext.Default.Options);
     }
+
+    // 2024-04-04 beta: https://docs.anthropic.com/claude/docs/tool-use
+    [JsonPropertyName("tools")]
+    public Tool[]? Tools { get; set; }
+
 }
 public record class Message
 {
@@ -144,6 +149,19 @@ public record class Content
 
     [JsonPropertyName("source")]
     public Source? Source { get; set; }
+
+    #region tool_use response
+
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("input")]
+    public Dictionary<string, string>? Input { get; set; }
+
+    #endregion
 
     public static implicit operator Content(string text) => new Content(text);
 
@@ -213,4 +231,41 @@ public record class Source
 
     [JsonPropertyName("data")]
     public required ReadOnlyMemory<byte> Data { get; set; } // Base64
+}
+
+// https://docs.anthropic.com/claude/docs/tool-use
+public record class Tool
+{
+    [JsonPropertyName("name")]
+    public required string Name { get; set; }
+
+    [JsonPropertyName("description")]
+    public required string Description { get; set; }
+
+    [JsonPropertyName("input_schema")]
+    public InputSchema? InputSchema { get; set; }
+}
+
+public record class InputSchema
+{
+    [JsonPropertyName("type")]
+    public required string Type { get; set; }
+
+    [JsonPropertyName("properties")]
+    public Dictionary<string, ToolProperty>? Properties { get; set; }
+
+    [JsonPropertyName("required")]
+    public string[]? Required { get; set; }
+}
+
+public record class ToolProperty
+{
+    [JsonPropertyName("type")]
+    public required string Type { get; set; }
+
+    [JsonPropertyName("enum")]
+    public string[]? Enum { get; set; }
+
+    [JsonPropertyName("description")]
+    public required string Description { get; set; }
 }

@@ -17,16 +17,17 @@
 
 //using Claudia;
 //using System;
+//using System.Collections.Generic;
 //using System.Linq;
 //using System.Text;
 //using System.Threading.Tasks;
 //using System.Xml.Linq;
 
-//static partial class FunctionTools
+//static partial class FunctionTools2
 //{
 
 //    public const string SystemPrompt = @$"
-//In this environment you have access to a set of tools you can use to answer the user's question. If there are multiple <invoke> tags, please consolidate them into a single <function_calls> block.
+//In this environment you have access to a set of tools you can use to answer the user's question. If your solution involves the use of multiple tools, please include multiple <invoke>s within a single <function_calls> tag. Each step-by-step answer or tag is not required. Only a single <function_calls> tag should be returned at the beginning.
 
 //You may call them like this:
 //<function_calls>
@@ -37,59 +38,50 @@
 //            ...
 //        </parameters>
 //    </invoke>
+//    <invoke>
+//        <tool_name>$TOOL_NAME</tool_name>
+//        <parameters>
+//            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
+//            ...
+//        </parameters>
+//    </invoke>
+//    ...
 //</function_calls>
 
 //Here are the tools available:
 
 //{PromptXml.ToolsAll}
+
+//Again, including multiple <function_calls> tags in the reply is prohibited.
 //";
 
 //    public static class PromptXml
 //    {
 //        public const string ToolsAll = @$"
-//{Today}
-//{Sum}
+//<tools>
+//{TimeOfDay}
 //{DoPairwiseArithmetic}
+//{GetHtmlFromWeb}
+//</tools>
 //";
-
-//        public const string Today = @"
+//        public const string TimeOfDay = @"
 //<tool_description>
-//  <tool_name>Today</tool_name>
-//  <description>Date of target location.</description>
+//  <tool_name>TimeOfDay</tool_name>
+//  <description>Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.</description>
 //  <parameters>
 //    <parameter>
-//      <name>timeZoneId</name>
+//      <name>timeZone</name>
 //      <type>string</type>
-//      <description>TimeZone of localtion like 'Tokeyo Standard Time', 'Eastern Standard Time', etc.</description>
+//      <description>The time zone to get the current time for, such as UTC, US/Pacific, Europe/London.</description>
 //    </parameter>
 //  </parameters>
 //</tool_description>
 //";
-
-//        public const string Sum = @"
-//<tool_description>
-//  <tool_name>Sum</tool_name>
-//  <description>Sum of two integer parameters.</description>
-//  <parameters>
-//    <parameter>
-//      <name>x</name>
-//      <type>int</type>
-//      <description>parameter1.</description>
-//    </parameter>
-//    <parameter>
-//      <name>y</name>
-//      <type>int</type>
-//      <description>parameter2.</description>
-//    </parameter>
-//  </parameters>
-//</tool_description>
-//";
-
 //        public const string DoPairwiseArithmetic = @"
 //<tool_description>
 //  <tool_name>DoPairwiseArithmetic</tool_name>
 //  <description>Calculator function for doing basic arithmetic. 
-//    Supports addition, subtraction, multiplication</description>
+//     Supports addition, subtraction, multiplication</description>
 //  <parameters>
 //    <parameter>
 //      <name>firstOperand</name>
@@ -109,8 +101,108 @@
 //  </parameters>
 //</tool_description>
 //";
+//        public const string GetHtmlFromWeb = @"
+//<tool_description>
+//  <tool_name>GetHtmlFromWeb</tool_name>
+//  <description>Retrieves the HTML from the specified URL.</description>
+//  <parameters>
+//    <parameter>
+//      <name>url</name>
+//      <type>string</type>
+//      <description>The URL to retrieve the HTML from.</description>
+//    </parameter>
+//  </parameters>
+//</tool_description>
+//";
+//        public static class Tools
+//        {
+//            public static readonly Tool TimeOfDay = new Tool
+//            {
+//                Name = "TimeOfDay",
+//                Description = "Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.",
+//                InputSchema = new InputSchema
+//                {
+//                    Type = "object",
+//                    Properties = new Dictionary<string, ToolProperty>
+//                {
+//                    {
+//                        "timeZone", new ToolProperty()
+//                        {
+//                            Type = "string",
+//                            Description = "Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London."
+//                        }
+//                    },
 
+//                },
+//                    Required = new[] { timeZone }
+//                }
 
+//            };
+//            public static readonly Tool DoPairwiseArithmetic = new Tool
+//            {
+//                Name = "DoPairwiseArithmetic",
+//                Description = "Calculator function for doing basic arithmetic. 
+//         Supports addition,
+//                subtraction,
+//                multiplication",
+//                            InputSchema = new InputSchema
+//                            {
+//                                Type = "object",
+//                                Properties = new Dictionary<string, ToolProperty>
+//                {
+//                    {
+//                        "firstOperand", new ToolProperty()
+//                        {
+//                            Type = "double",
+//                            Description = "Calculator function for doing basic arithmetic. 
+//     Supports addition, subtraction, multiplication"
+//                        },
+//                    },
+//                    {
+//                        "secondOperand", new ToolProperty()
+//                        {
+//                            Type = "double",
+//                            Description = "Calculator function for doing basic arithmetic. 
+//     Supports addition, subtraction, multiplication"
+//                        },
+//                    },
+//                    {
+//                        "operator", new ToolProperty()
+//                        {
+//                            Type = "string",
+//                            Description = "Calculator function for doing basic arithmetic. 
+//     Supports addition, subtraction, multiplication"
+//                        },
+//                    },
+
+//                },
+//                                Required = new[] { firstOperand, secondOperand, operator }
+//                            }
+
+//            };
+//            public static readonly Tool GetHtmlFromWeb = new Tool
+//            {
+//                Name = "GetHtmlFromWeb",
+//                Description = "Retrieves the HTML from the specified URL.",
+//                InputSchema = new InputSchema
+//                {
+//                    Type = "object",
+//                    Properties = new Dictionary<string, ToolProperty>
+//                {
+//                    {
+//                        "url", new ToolProperty()
+//                        {
+//                            Type = "string",
+//                            Description = "Retrieves the HTML from the specified URL."
+//                        },
+//                    },
+
+//                },
+//                    Required = new[] { url }
+//                }
+
+//            };
+//        }
 //    }
 
 //#pragma warning disable CS1998
@@ -118,9 +210,9 @@
 //    {
 //        var content = message.Content.FirstOrDefault(x => x.Text != null);
 //        if (content == null) return null;
-        
+
 //        var text = content.Text;
-//        var tagStart = text .IndexOf("<function_calls>");
+//        var tagStart = text.IndexOf("<function_calls>");
 //        if (tagStart == -1) return null;
 
 //        var functionCalls = text.Substring(tagStart) + "</function_calls>";
@@ -135,23 +227,13 @@
 //            var name = (string)item.Element("tool_name")!;
 //            switch (name)
 //            {
-//                case "Today":
+//                case "TimeOfDay":
 //                    {
 //                        var parameters = item.Element("parameters")!;
 
-//                        var _0 = (string)parameters.Element("timeZoneId")!;
+//                        var _0 = (string)parameters.Element("timeZone")!;
 
-//                        BuildResult(sb, "Today", Today(_0));
-//                        break;
-//                    }
-//                case "Sum":
-//                    {
-//                        var parameters = item.Element("parameters")!;
-
-//                        var _0 = (int)parameters.Element("x")!;
-//                        var _1 = (int)parameters.Element("y")!;
-
-//                        BuildResult(sb, "Sum", Sum(_0, _1));
+//                        BuildResult(sb, "TimeOfDay", TimeOfDay(_0));
 //                        break;
 //                    }
 //                case "DoPairwiseArithmetic":
@@ -163,6 +245,15 @@
 //                        var _2 = (string)parameters.Element("operator")!;
 
 //                        BuildResult(sb, "DoPairwiseArithmetic", DoPairwiseArithmetic(_0, _1, _2));
+//                        break;
+//                    }
+//                case "GetHtmlFromWeb":
+//                    {
+//                        var parameters = item.Element("parameters")!;
+
+//                        var _0 = (string)parameters.Element("url")!;
+
+//                        BuildResult(sb, "GetHtmlFromWeb", await GetHtmlFromWeb(_0).ConfigureAwait(false));
 //                        break;
 //                    }
 
@@ -177,14 +268,10 @@
 
 //        static void BuildResult<T>(StringBuilder sb, string toolName, T result)
 //        {
-//            sb.AppendLine(@$"
-//    <result>
+//            sb.AppendLine(@$"    <result>
 //        <tool_name>{toolName}</tool_name>
-//        <stdout>
-//            {result}
-//        </stdout>
-//    </result>
-//");
+//        <stdout>{result}</stdout>
+//    </result>");
 //        }
 //    }
 //#pragma warning restore CS1998

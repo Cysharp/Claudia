@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using System.Text;
 using System.Xml.Linq;
+using static Claudia.FunctionGenerator.Emitter;
 
 namespace Claudia.FunctionGenerator;
 
@@ -87,6 +88,8 @@ Again, including multiple <function_calls> tags in the reply is prohibited.
         {
             EmitToolDescription(method);
         }
+
+        EmitTools(parseResult);
 
         sb.AppendLine("    }"); // close PromptXml
 
@@ -204,6 +207,81 @@ Again, including multiple <function_calls> tags in the reply is prohibited.
 """";
 
         sb.AppendLine(code);
+    }
+
+    void EmitTools(ParseResult parseResult)
+    {
+        // TODO: Add All
+        // public static readonly Tool[] All = @$"
+        sb.AppendLine($$"""
+    public static class Tools
+    {
+""");
+
+        // Emit Tool
+        foreach (var method in parseResult.Methods)
+        {
+            var docComment = method.Syntax.GetDocumentationCommentTriviaSyntax()!;
+            var description = docComment.GetSummary().Replace("\"", "'").Replace("\r\n", " ").Replace("\n", " ");
+
+            // property
+            var inputSchema = new StringBuilder();
+            if (method.Symbol.Parameters.Length != 0)
+            {
+                var propBuilder = new StringBuilder();
+                var paramRequired = new List<string>();
+                foreach (var p in docComment.GetParams())
+                {
+                    var paramDescription = p.Description.Replace("\"", "'").Replace("\r\n", " ").Replace("\n", " ");
+
+                    // type retrieve from method symbol
+                    var name = p.Name;
+                    var paramType = method.Symbol.Parameters.First(x => x.Name == name).Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+
+                    // TODO: support enum
+                    propBuilder.AppendLine($$"""
+                    {
+                        "{{name}}", new ToolProperty()
+                        {
+                            Type = "{{paramType}}",
+                            Description = "{{description}}"
+                        }
+                    },
+""");
+                    // TODO: support optional parameter
+                    paramRequired.Add("\"" + name + "\"");
+                }
+                var required = string.Join(", ", paramRequired);
+                if (required.Length != 0)
+                {
+                    required = "Required = new [] { " + required + " }";
+                }
+
+                inputSchema.AppendLine($$"""
+            InputSchema = new InputSchema
+            {
+                Type = "object",
+                Properties = new System.Collections.Generic.Dictionary<string, ToolProperty>
+                {
+{{propBuilder}}
+                },
+                {{required}}
+            }
+""");
+            }
+
+            sb.AppendLine($$"""
+        public static readonly Tool {{method.Name}} = new Tool
+        {
+            Name = "{{method.Name}}",
+            Description = "{{description}}",
+{{inputSchema}}
+        };
+
+""");
+        }
+
+        sb.AppendLine("    }"); // close Tools
     }
 
     static void AddSource(SourceProductionContext context, ISymbol targetSymbol, string code, string fileExtension = ".g.cs")
