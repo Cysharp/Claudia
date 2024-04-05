@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Claudia;
 
@@ -90,6 +91,11 @@ public record class MessageRequest
     {
         return JsonSerializer.Serialize(this, AnthropicJsonSerialzierContext.Default.Options);
     }
+
+    // 2024-04-04 beta: https://docs.anthropic.com/claude/docs/tool-use
+    [JsonPropertyName("tools")]
+    public Tool[]? Tools { get; set; }
+
 }
 public record class Message
 {
@@ -127,7 +133,7 @@ public class Contents : Collection<Content>
         }
         else
         {
-            return base.ToString() ?? "";
+            return "[" + string.Join(", ", this.Select(x => x.ToString())) + "]";
         }
     }
 }
@@ -144,6 +150,35 @@ public record class Content
 
     [JsonPropertyName("source")]
     public Source? Source { get; set; }
+
+    #region tool_use response
+
+    /// <summary>A unique identifier for this particular tool use block. This will be used to match up the tool results later.</summary>
+    [JsonPropertyName("id")]
+    public string? ToolUseId { get; set; }
+
+    /// <summary>The name of the tool being used.</summary>
+    [JsonPropertyName("name")]
+    public string? ToolUseName { get; set; }
+
+    /// <summary>An object containing the input being passed to the tool, conforming to the tool's input_schema.</summary>
+    [JsonPropertyName("input")]
+    public Dictionary<string, string>? ToolUseInput { get; set; }
+
+    /// <summary>The result of the tool.</summary>
+    [JsonPropertyName("content")]
+    public Contents? ToolResultContent { get; set; }
+
+    /// <summary>The id of the tool use request this is a result for.</summary>
+    [JsonPropertyName("tool_use_id")]
+    public string? ToolResultId { get; set; }
+
+    /// <summary>Set to true if the tool execution resulted in an error.</summary>
+    [JsonPropertyName("is_error")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool? ToolResultIsError { get; set; }
+
+    #endregion
 
     public static implicit operator Content(string text) => new Content(text);
 
@@ -180,6 +215,30 @@ public record class Content
         {
             return $"{Source.Type}(Source.Data.Length)";
         }
+        else if (ToolUseId != null)
+        {
+            var sb = new StringBuilder();
+            sb.Append(ToolUseName);
+            sb.Append("(");
+            if (ToolUseInput != null)
+            {
+                var first = true;
+                foreach (var item in ToolUseInput)
+                {
+                    if (first)
+                    {
+                        first = true;
+                    }
+                    else
+                    {
+                        sb.Append(", ");
+                    }
+                    sb.Append(item.Key + ": " + item.Value);
+                }
+            }
+            sb.Append(")");
+            return sb.ToString();
+        }
         else
         {
             return base.ToString() ?? "";
@@ -213,4 +272,41 @@ public record class Source
 
     [JsonPropertyName("data")]
     public required ReadOnlyMemory<byte> Data { get; set; } // Base64
+}
+
+// https://docs.anthropic.com/claude/docs/tool-use
+public record class Tool
+{
+    [JsonPropertyName("name")]
+    public required string Name { get; set; }
+
+    [JsonPropertyName("description")]
+    public required string Description { get; set; }
+
+    [JsonPropertyName("input_schema")]
+    public InputSchema? InputSchema { get; set; }
+}
+
+public record class InputSchema
+{
+    [JsonPropertyName("type")]
+    public required string Type { get; set; }
+
+    [JsonPropertyName("properties")]
+    public Dictionary<string, ToolProperty>? Properties { get; set; }
+
+    [JsonPropertyName("required")]
+    public string[]? Required { get; set; }
+}
+
+public record class ToolProperty
+{
+    [JsonPropertyName("type")]
+    public required string Type { get; set; }
+
+    [JsonPropertyName("enum")]
+    public string[]? Enum { get; set; }
+
+    [JsonPropertyName("description")]
+    public required string Description { get; set; }
 }

@@ -68,7 +68,6 @@ public class Anthropic : IMessages, IDisposable
     {
         request.Stream = null;
         using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(ConfigureAwait);
-
         var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct, _) => x.Content.ReadFromJsonAsync<MessageResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(ConfigureAwait);
         return result!;
     }

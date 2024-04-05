@@ -27,6 +27,9 @@ namespace Claudia;
 [JsonSerializable(typeof(ContentBlockStop))]
 [JsonSerializable(typeof(MessageStartBody))]
 [JsonSerializable(typeof(MessageDeltaBody))]
+[JsonSerializable(typeof(Tool))]
+[JsonSerializable(typeof(InputSchema))]
+[JsonSerializable(typeof(ToolProperty))]
 public partial class AnthropicJsonSerialzierContext : JsonSerializerContext
 {
 }

@@ -4,7 +4,7 @@ Unofficial [Anthropic Claude API](https://www.anthropic.com/api) client for .NET
 
 We have built a C# API similar to the official [Python SDK](https://github.com/anthropics/anthropic-sdk-python) and [TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript). It supports netstandard2.1, net6.0, and net8.0.
 
-In addition to the pure client SDK, it also includes a C# Source Generator for performing Function Calling, similar to [anthropic-tools](https://github.com/anthropics/anthropic-tools/).
+In addition to the pure client SDK, it also includes a C# Source Generator for performing Function Calling.
 
 Installation
 ---
@@ -494,15 +494,107 @@ void Load()
 
 Function Calling
 ---
-Claude supports Function Calling. The [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook) provides examples of Function Calling. To achieve this, complex XML generation and parsing processing, as well as execution based on the parsed results, are required.
+Claude supports Function Calling.
+
+## TOol use
+
+[Tool use(function calling)](https://docs.anthropic.com/claude/docs/tool-use) is new style of function calling. Currently it is beta and need to add `anthropic-beta` flag in header.
+
+```csharp
+var anthropic = new Anthropic();
+anthropic.HttpClient.DefaultRequestHeaders.Add("anthropic-beta", "tools-2024-04-04");
+```
+
+With Claudia, you only need to define static methods annotated with `[ClaudiaFunction]`, and the C# Source Generator automatically generates the necessary code.
+
+```csharp
+public static partial class FunctionTools
+{
+    /// <summary>
+    /// Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.
+    /// </summary>
+    /// <param name="timeZone">The time zone to get the current time for, such as UTC, US/Pacific, Europe/London.</param>
+    [ClaudiaFunction]
+    public static string TimeOfDay(string timeZone)
+    {
+        var time =  TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, timeZone);
+        return time.ToString("HH:mm:ss");
+    }
+}
+```
+
+The `partial class` includes the generated `.AllTools`, `.Tools.[Methods]` and `.InvokeToolAsync(MessageResponse)`.
+
+Function Calling requires two requests to Claude. The flow is as follows: "Initial request to Claude with available tools in System Prompt -> Execute functions based on the message containing the necessary tools -> Include the results in a new message and send another request to Claude."
+
+```csharp
+var anthropic = new Anthropic();
+anthropic.HttpClient.DefaultRequestHeaders.Add("anthropic-beta", "tools-2024-04-04");
+
+var input = new Message { Role = Roles.User, Content = "What time is it in Los Angeles?" };
+var message = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Haiku,
+    MaxTokens = 1024,
+    Tools = FunctionTools.AllTools, // use generated Tools
+    Messages = [input],
+});
+
+// invoke local function
+var toolResult = await FunctionTools.InvokeToolAsync(message);
+
+var response = await anthropic.Messages.CreateAsync(new()
+{
+    Model = Models.Claude3Haiku,
+    MaxTokens = 1024,
+    Tools = [ToolUseSamples.Tools.Calculator],
+    Messages = [
+        input,
+        new() { Role = Roles.Assistant, Content = message.Content },
+        new() { Role = Roles.User, Content = toolResult! }
+    ],
+});
+
+// The current time in Los Angeles is 10:45 AM.
+Console.WriteLine(response.Content.ToString());
+```
+
+The return type of `ClaudiaFunction` can also be specified as `Task<T>` or `ValueTask<T>`. This allows you to execute a variety of tasks, such as HTTP requests or database requests. For example, a function that retrieves the content of a specified webpage can be defined as shown above.
+
+```csharp
+public static partial class FunctionTools
+{
+    // ...
+
+    /// <summary>
+    /// Retrieves the HTML from the specified URL.
+    /// </summary>
+    /// <param name="url">The URL to retrieve the HTML from.</param>
+    [ClaudiaFunction]
+    static async Task<string> GetHtmlFromWeb(string url)
+    {
+        // When using this in a real-world application, passing the raw HTML might consume too many tokens.
+        // You can parse the HTML locally using libraries like AngleSharp and convert it into a compact text structure to save tokens.
+        using var client = new HttpClient();
+        return await client.GetStringAsync(url);
+    }
+}
+```
+
+Note that the allowed parameter types are `bool`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `decimal`, `float`, `double`, `string`, `DateTime`, `DateTimeOffset`, `Guid`, `TimeSpan` and `Enum`.
+
+The return value can be of any type, but it will be converted to a string using `ToString()`. If you want to return a custom string, make the return type `string` and format the string within the function.
+
+
+## Legacy style
+
+The [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook) provides examples of Function Calling. To achieve this, complex XML generation and parsing processing, as well as execution based on the parsed results, are required.
 
 With Claudia, you only need to define static methods annotated with `[ClaudiaFunction]`, and the C# Source Generator automatically generates the necessary code, including parsers and system messages.
 
 ```csharp
 public static partial class FunctionTools
 {
-    // Sample of anthropic-tools https://github.com/anthropics/anthropic-tools#basetool
-
     /// <summary>
     /// Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.
     /// </summary>
@@ -739,7 +831,7 @@ var callResult = await anthropic.Messages.CreateAsync(new()
 Console.WriteLine(callResult);
 ```
 
-Note that the allowed parameter types are `bool`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `decimal`, `float`, `double`, `string`, `DateTime`, `DateTimeOffset`, `Guid`, and `TimeSpan`.
+Note that the allowed parameter types are `bool`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `decimal`, `float`, `double`, `string`, `DateTime`, `DateTimeOffset`, `Guid`, `TimeSpan` and `Enum`.
 
 The return value can be of any type, but it will be converted to a string using `ToString()`. If you want to return a custom string, make the return type `string` and format the string within the function.
 

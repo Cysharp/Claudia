@@ -46,6 +46,8 @@ public static class ContentTypes
 {
     public const string Text = "text";
     public const string Image = "image";
+    public const string ToolUse = "tool_use";
+    public const string ToolResult = "tool_result";
 }
 
 public static class StopSequnces
@@ -62,6 +64,8 @@ public static class StopReasons
     public const string MaxTokens = "max_tokens";
     /// <summary>one of your provided custom stop_sequences was generated</summary>
     public const string StopSequence = "stop_sequence";
+
+    public const string ToolUse = "tool_use";
 }
 
 public static class SystemPrompts
