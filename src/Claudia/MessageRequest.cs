@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Claudia;
 
@@ -132,7 +133,7 @@ public class Contents : Collection<Content>
         }
         else
         {
-            return base.ToString() ?? "";
+            return "[" + string.Join(", ", this.Select(x => x.ToString())) + "]";
         }
     }
 }
@@ -152,14 +153,30 @@ public record class Content
 
     #region tool_use response
 
+    /// <summary>A unique identifier for this particular tool use block. This will be used to match up the tool results later.</summary>
     [JsonPropertyName("id")]
-    public string? Id { get; set; }
+    public string? ToolUseId { get; set; }
 
+    /// <summary>The name of the tool being used.</summary>
     [JsonPropertyName("name")]
-    public string? Name { get; set; }
+    public string? ToolUseName { get; set; }
 
+    /// <summary>An object containing the input being passed to the tool, conforming to the tool's input_schema.</summary>
     [JsonPropertyName("input")]
-    public Dictionary<string, string>? Input { get; set; }
+    public Dictionary<string, string>? ToolUseInput { get; set; }
+
+    /// <summary>The result of the tool.</summary>
+    [JsonPropertyName("content")]
+    public Contents? ToolResultContent { get; set; }
+
+    /// <summary>The id of the tool use request this is a result for.</summary>
+    [JsonPropertyName("tool_use_id")]
+    public string? ToolResultId { get; set; }
+
+    /// <summary>Set to true if the tool execution resulted in an error.</summary>
+    [JsonPropertyName("is_error")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool? ToolResultIsError { get; set; }
 
     #endregion
 
@@ -197,6 +214,30 @@ public record class Content
         else if (Source != null)
         {
             return $"{Source.Type}(Source.Data.Length)";
+        }
+        else if (ToolUseId != null)
+        {
+            var sb = new StringBuilder();
+            sb.Append(ToolUseName);
+            sb.Append("(");
+            if (ToolUseInput != null)
+            {
+                var first = true;
+                foreach (var item in ToolUseInput)
+                {
+                    if (first)
+                    {
+                        first = true;
+                    }
+                    else
+                    {
+                        sb.Append(", ");
+                    }
+                    sb.Append(item.Key + ": " + item.Value);
+                }
+            }
+            sb.Append(")");
+            return sb.ToString();
         }
         else
         {

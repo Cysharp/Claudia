@@ -20,260 +20,73 @@
 //using System.Collections.Generic;
 //using System.Linq;
 //using System.Text;
+//using System.Text.Json;
 //using System.Threading.Tasks;
 //using System.Xml.Linq;
 
-//static partial class FunctionTools2
+//static partial class FunctionTools
 //{
 
-//    public const string SystemPrompt = @$"
-//In this environment you have access to a set of tools you can use to answer the user's question. If your solution involves the use of multiple tools, please include multiple <invoke>s within a single <function_calls> tag. Each step-by-step answer or tag is not required. Only a single <function_calls> tag should be returned at the beginning.
 
-//You may call them like this:
-//<function_calls>
-//    <invoke>
-//        <tool_name>$TOOL_NAME</tool_name>
-//        <parameters>
-//            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
-//            ...
-//        </parameters>
-//    </invoke>
-//    <invoke>
-//        <tool_name>$TOOL_NAME</tool_name>
-//        <parameters>
-//            <$PARAMETER_NAME>$PARAMETER_VALUE</$PARAMETER_NAME>
-//            ...
-//        </parameters>
-//    </invoke>
-//    ...
-//</function_calls>
 
-//Here are the tools available:
-
-//{PromptXml.ToolsAll}
-
-//Again, including multiple <function_calls> tags in the reply is prohibited.
-//";
-
-//    public static class PromptXml
-//    {
-//        public const string ToolsAll = @$"
-//<tools>
-//{TimeOfDay}
-//{DoPairwiseArithmetic}
-//{GetHtmlFromWeb}
-//</tools>
-//";
-//        public const string TimeOfDay = @"
-//<tool_description>
-//  <tool_name>TimeOfDay</tool_name>
-//  <description>Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.</description>
-//  <parameters>
-//    <parameter>
-//      <name>timeZone</name>
-//      <type>string</type>
-//      <description>The time zone to get the current time for, such as UTC, US/Pacific, Europe/London.</description>
-//    </parameter>
-//  </parameters>
-//</tool_description>
-//";
-//        public const string DoPairwiseArithmetic = @"
-//<tool_description>
-//  <tool_name>DoPairwiseArithmetic</tool_name>
-//  <description>Calculator function for doing basic arithmetic. 
-//     Supports addition, subtraction, multiplication</description>
-//  <parameters>
-//    <parameter>
-//      <name>firstOperand</name>
-//      <type>double</type>
-//      <description>First operand (before the operator)</description>
-//    </parameter>
-//    <parameter>
-//      <name>secondOperand</name>
-//      <type>double</type>
-//      <description>Second operand (after the operator)</description>
-//    </parameter>
-//    <parameter>
-//      <name>operator</name>
-//      <type>string</type>
-//      <description>The operation to perform. Must be either +, -, *, or /</description>
-//    </parameter>
-//  </parameters>
-//</tool_description>
-//";
-//        public const string GetHtmlFromWeb = @"
-//<tool_description>
-//  <tool_name>GetHtmlFromWeb</tool_name>
-//  <description>Retrieves the HTML from the specified URL.</description>
-//  <parameters>
-//    <parameter>
-//      <name>url</name>
-//      <type>string</type>
-//      <description>The URL to retrieve the HTML from.</description>
-//    </parameter>
-//  </parameters>
-//</tool_description>
-//";
-//        public static class Tools
-//        {
-//            public static readonly Tool TimeOfDay = new Tool
-//            {
-//                Name = "TimeOfDay",
-//                Description = "Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London.",
-//                InputSchema = new InputSchema
-//                {
-//                    Type = "object",
-//                    Properties = new Dictionary<string, ToolProperty>
-//                {
-//                    {
-//                        "timeZone", new ToolProperty()
-//                        {
-//                            Type = "string",
-//                            Description = "Retrieve the current time of day in Hour-Minute-Second format for a specified time zone. Time zones should be written in standard formats such as UTC, US/Pacific, Europe/London."
-//                        }
-//                    },
-
-//                },
-//                    Required = new[] { timeZone }
-//                }
-
-//            };
-//            public static readonly Tool DoPairwiseArithmetic = new Tool
-//            {
-//                Name = "DoPairwiseArithmetic",
-//                Description = "Calculator function for doing basic arithmetic. 
-//         Supports addition,
-//                subtraction,
-//                multiplication",
-//                            InputSchema = new InputSchema
-//                            {
-//                                Type = "object",
-//                                Properties = new Dictionary<string, ToolProperty>
-//                {
-//                    {
-//                        "firstOperand", new ToolProperty()
-//                        {
-//                            Type = "double",
-//                            Description = "Calculator function for doing basic arithmetic. 
-//     Supports addition, subtraction, multiplication"
-//                        },
-//                    },
-//                    {
-//                        "secondOperand", new ToolProperty()
-//                        {
-//                            Type = "double",
-//                            Description = "Calculator function for doing basic arithmetic. 
-//     Supports addition, subtraction, multiplication"
-//                        },
-//                    },
-//                    {
-//                        "operator", new ToolProperty()
-//                        {
-//                            Type = "string",
-//                            Description = "Calculator function for doing basic arithmetic. 
-//     Supports addition, subtraction, multiplication"
-//                        },
-//                    },
-
-//                },
-//                                Required = new[] { firstOperand, secondOperand, operator }
-//                            }
-
-//            };
-//            public static readonly Tool GetHtmlFromWeb = new Tool
-//            {
-//                Name = "GetHtmlFromWeb",
-//                Description = "Retrieves the HTML from the specified URL.",
-//                InputSchema = new InputSchema
-//                {
-//                    Type = "object",
-//                    Properties = new Dictionary<string, ToolProperty>
-//                {
-//                    {
-//                        "url", new ToolProperty()
-//                        {
-//                            Type = "string",
-//                            Description = "Retrieves the HTML from the specified URL."
-//                        },
-//                    },
-
-//                },
-//                    Required = new[] { url }
-//                }
-
-//            };
-//        }
-//    }
 
 //#pragma warning disable CS1998
-//    public static async ValueTask<string?> InvokeAsync(MessageResponse message)
+//    public static async ValueTask<Content[]> InvokeToolAsync(MessageResponse message)
 //    {
-//        var content = message.Content.FirstOrDefault(x => x.Text != null);
-//        if (content == null) return null;
+//        var result = new List<Content>();
 
-//        var text = content.Text;
-//        var tagStart = text.IndexOf("<function_calls>");
-//        if (tagStart == -1) return null;
-
-//        var functionCalls = text.Substring(tagStart) + "</function_calls>";
-//        var xmlResult = XElement.Parse(functionCalls);
-
-//        var sb = new StringBuilder();
-//        sb.AppendLine(functionCalls);
-//        sb.AppendLine("<function_results>");
-
-//        foreach (var item in xmlResult.Elements("invoke"))
+//        foreach (var item in message.Content)
 //        {
-//            var name = (string)item.Element("tool_name")!;
-//            switch (name)
+//            if (item.Type != ContentTypes.ToolUse) continue;
+
+//            switch (item.ToolUseName)
 //            {
 //                case "TimeOfDay":
 //                    {
-//                        var parameters = item.Element("parameters")!;
+//                        // if (!item.ToolUseInput.TryGetValue("timeZone", out var _0)) _0 = default;
+//                        var _0 = GetValueOrDefault<string>(item, "timeZone", default!);
+//                        string? _callResult;
+//                        bool? _isError = null;
+//                        try
+//                        {
+//                            _callResult = TimeOfDay(_0).ToString();
+//                        }
+//                        catch (Exception ex)
+//                        {
+//                            _callResult = ex.Message;
+//                            _isError = true;
+//                        }
 
-//                        var _0 = (string)parameters.Element("timeZone")!;
+//                        result.Add(new Content
+//                        {
+//                            Type = ContentTypes.ToolResult,
+//                            ToolUseId = item.ToolUseId,
+//                            ToolResultContent = _callResult,
+//                            ToolResultIsError = _isError
+//                        });
 
-//                        BuildResult(sb, "TimeOfDay", TimeOfDay(_0));
 //                        break;
 //                    }
-//                case "DoPairwiseArithmetic":
-//                    {
-//                        var parameters = item.Element("parameters")!;
-
-//                        var _0 = (double)parameters.Element("firstOperand")!;
-//                        var _1 = (double)parameters.Element("secondOperand")!;
-//                        var _2 = (string)parameters.Element("operator")!;
-
-//                        BuildResult(sb, "DoPairwiseArithmetic", DoPairwiseArithmetic(_0, _1, _2));
-//                        break;
-//                    }
-//                case "GetHtmlFromWeb":
-//                    {
-//                        var parameters = item.Element("parameters")!;
-
-//                        var _0 = (string)parameters.Element("url")!;
-
-//                        BuildResult(sb, "GetHtmlFromWeb", await GetHtmlFromWeb(_0).ConfigureAwait(false));
-//                        break;
-//                    }
-
 //                default:
 //                    break;
 //            }
 //        }
 
-//        sb.Append("</function_results>"); // final assistant content cannot end with trailing whitespace
+//        return result.ToArray();
 
-//        return sb.ToString();
-
-//        static void BuildResult<T>(StringBuilder sb, string toolName, T result)
+//        static T GetValueOrDefault<T>(Content content, string name, T defaultValue)
 //        {
-//            sb.AppendLine(@$"    <result>
-//        <tool_name>{toolName}</tool_name>
-//        <stdout>{result}</stdout>
-//    </result>");
+//            if (content.ToolUseInput.TryGetValue(name, out var stringValue))
+//            {
+//                return System.Text.Json.JsonSerializer.Deserialize<T>(stringValue)!;
+//            }
+//            else
+//            {
+//                return defaultValue;
+//            }
 //        }
 //    }
+
 //#pragma warning restore CS1998
 //}
 

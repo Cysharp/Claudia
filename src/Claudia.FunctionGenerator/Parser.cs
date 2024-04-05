@@ -130,6 +130,10 @@ public class Parser
                             {
                                 break;
                             }
+                            if (p.Type.TypeKind == TypeKind.Enum)
+                            {
+                                break;
+                            }
 
                             hasError = true;
                             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ParameterTypeIsNotSupported, method.Locations[0], method.Name, p.Name, p.Type.Name));
