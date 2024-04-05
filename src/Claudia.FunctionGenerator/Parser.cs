@@ -59,6 +59,7 @@ public class Parser
                 continue;
             }
 
+            var hasError = false;
             foreach (var source in item)
             {
                 // source.TargetNode
@@ -68,6 +69,7 @@ public class Parser
                 if (docComment == null)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodNeedsDocumentationCommentXml, method.Locations[0], method.Name));
+                    hasError = true;
                     continue;
                 }
                 else
@@ -76,6 +78,7 @@ public class Parser
                     if (string.IsNullOrWhiteSpace(description))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MethodNeedsSummary, method.Locations[0], method.Name));
+                        hasError = true;
                         continue;
                     }
 
@@ -88,6 +91,7 @@ public class Parser
                             if (string.IsNullOrWhiteSpace(desc))
                             {
                                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ParameterNeedsDescription, method.Locations[0], method.Name, p.Name));
+                                hasError = true;
                                 continue;
                             }
 
@@ -98,12 +102,12 @@ public class Parser
                         if (parameterNames.Count != 0)
                         {
                             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.AllParameterNeedsDescription, method.Locations[0], method.Name));
+                            hasError = true;
                             continue;
                         }
                     }
                 }
 
-                var hasError = false;
                 foreach (var p in method.Parameters)
                 {
                     // castable types
@@ -140,18 +144,20 @@ public class Parser
                             continue;
                     }
                 }
-                if (hasError)
-                {
-                    continue;
-                }
 
                 if (method.ReturnsVoid || (method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) is "global::System.Threading.Tasks.Task" or "global::System.Threading.Tasks.ValueTask"))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.VoidReturnIsNotSupported, method.Locations[0], method.Name));
+                    hasError = true;
                     continue;
                 }
 
                 methods.Add(new Method { Symbol = method, Syntax = (MethodDeclarationSyntax)source.TargetNode });
+            }
+
+            if (hasError)
+            {
+                continue;
             }
 
             list.Add(new ParseResult
