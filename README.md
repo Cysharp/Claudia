@@ -547,7 +547,7 @@ var response = await anthropic.Messages.CreateAsync(new()
 {
     Model = Models.Claude3Haiku,
     MaxTokens = 1024,
-    Tools = [ToolUseSamples.Tools.Calculator],
+    Tools = FunctionTools.AllTools,
     Messages = [
         input,
         new() { Role = Roles.Assistant, Content = message.Content },
