@@ -496,7 +496,7 @@ Function Calling
 ---
 Claude supports Function Calling.
 
-## TOol use
+## Tool use
 
 [Tool use(function calling)](https://docs.anthropic.com/claude/docs/tool-use) is new style of function calling. Currently it is beta and need to add `anthropic-beta` flag in header.
 
