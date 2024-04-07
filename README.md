@@ -1048,6 +1048,8 @@ Source Generators for Function Calling are also supported, but additional work i
     - Note:
         - If you are using assembly definition, add your additional csproj in the list of [The project to be addef for import].
 
+If you encount `Constructors of types with required members are not supported in this version of your compiler` error, LangVersion should change to `11`.
+
 ```csharp
 using Claudia;
 using System;
