@@ -525,6 +525,15 @@ Again, including multiple <function_calls> tags in the reply is prohibited.
             }
 """);
             }
+            else
+            {
+                inputSchema.AppendLine($$"""
+            InputSchema = new InputSchema
+            {
+                Type = "object"
+            }
+""");
+            }
 
             sb.AppendLine($$"""
         public static readonly Tool {{method.Name}} = new Tool
