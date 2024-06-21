@@ -4,12 +4,12 @@
 public static class Models
 {
     /// <summary>
-    /// Most powerful model for highly complex tasks
+    /// Powerful model for highly complex tasks
     /// </summary>
     public const string Claude3Opus = "claude-3-opus-20240229";
 
     /// <summary>
-    /// Ideal balance of intelligence and speed for enterprise workloads
+    /// Balance of intelligence and speed
     /// </summary>
     public const string Claude3Sonnet = "claude-3-sonnet-20240229";
 
@@ -17,6 +17,11 @@ public static class Models
     /// Fastest and most compact model for near-instant responsiveness
     /// </summary>
     public const string Claude3Haiku = "claude-3-haiku-20240307";
+
+    /// <summary>
+    /// Most intelligent model
+    /// </summary>
+    public const string Claude3_5Sonnet = "claude-3-5-sonnet-20240620";
 
     /// <summary>Updated version of Claude 2 with improved accuracy</summary>
     public const string Claude2_1 = "claude-2.1";

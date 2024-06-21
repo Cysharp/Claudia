@@ -30,7 +30,7 @@ var anthropic = new Anthropic
 
 var message = await anthropic.Messages.CreateAsync(new()
 {
-    Model = "claude-3-opus-20240229", // you can use Claudia.Models.Claude3Opus string constant
+    Model = "claude-3-5-sonnet-20240620", // you can use Claudia.Models.Claude3_5Sonnet string constant
     MaxTokens = 1024,
     Messages = [new() { Role = "user", Content = "Hello, Claude" }]
 });

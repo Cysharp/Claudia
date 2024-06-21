@@ -16,33 +16,44 @@ using System.Xml.Linq;
 
 
 var anthropic = new Anthropic();
-anthropic.HttpClient.DefaultRequestHeaders.Add("anthropic-beta", "tools-2024-04-04");
 
-var input = new Message { Role = Roles.User, Content = "What time is it in Los Angeles?" };
 var message = await anthropic.Messages.CreateAsync(new()
 {
-    Model = Models.Claude3Haiku,
+    Model = Claudia.Models.Claude3_5Sonnet, // you can use Claudia.Models.Claude3Opus string constant
     MaxTokens = 1024,
-    Tools = FunctionTools.AllTools, // use generated Tools
-    Messages = [input],
+    Messages = [new() { Role = "user", Content = "Hello, Claude" }]
 });
 
-var toolResult = await FunctionTools.InvokeToolAsync(message);
+Console.WriteLine(message);
 
-var response = await anthropic.Messages.CreateAsync(new()
-{
-    Model = Models.Claude3Haiku,
-    MaxTokens = 1024,
-    Tools = [ToolUseSamples.Tools.Calculator],
-    Messages = [
-        input,
-        new() { Role = Roles.Assistant, Content = message.Content },
-        new() { Role = Roles.User, Content = toolResult! }
-    ],
-});
 
-// The current time in Los Angeles is 10:45 AM.
-Console.WriteLine(response.Content.ToString());
+//anthropic.HttpClient.DefaultRequestHeaders.Add("anthropic-beta", "tools-2024-04-04");
+
+//var input = new Message { Role = Roles.User, Content = "What time is it in Los Angeles?" };
+//var message = await anthropic.Messages.CreateAsync(new()
+//{
+//    Model = Models.Claude3Haiku,
+//    MaxTokens = 1024,
+//    Tools = FunctionTools.AllTools, // use generated Tools
+//    Messages = [input],
+//});
+
+//var toolResult = await FunctionTools.InvokeToolAsync(message);
+
+//var response = await anthropic.Messages.CreateAsync(new()
+//{
+//    Model = Models.Claude3Haiku,
+//    MaxTokens = 1024,
+//    Tools = [ToolUseSamples.Tools.Calculator],
+//    Messages = [
+//        input,
+//        new() { Role = Roles.Assistant, Content = message.Content },
+//        new() { Role = Roles.User, Content = toolResult! }
+//    ],
+//});
+
+//// The current time in Los Angeles is 10:45 AM.
+//Console.WriteLine(response.Content.ToString());
 
 
 public static partial class FunctionTools
