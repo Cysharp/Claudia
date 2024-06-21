@@ -163,6 +163,7 @@ public record class Content
 
     /// <summary>An object containing the input being passed to the tool, conforming to the tool's input_schema.</summary>
     [JsonPropertyName("input")]
+    [JsonConverter(typeof(DictionaryJsonConverter))]
     public Dictionary<string, string>? ToolUseInput { get; set; }
 
     /// <summary>The result of the tool.</summary>
