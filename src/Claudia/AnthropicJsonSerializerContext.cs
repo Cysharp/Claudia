@@ -30,6 +30,6 @@ namespace Claudia;
 [JsonSerializable(typeof(Tool))]
 [JsonSerializable(typeof(InputSchema))]
 [JsonSerializable(typeof(ToolProperty))]
-public partial class AnthropicJsonSerialzierContext : JsonSerializerContext
+public partial class AnthropicJsonSerializerContext : JsonSerializerContext
 {
 }

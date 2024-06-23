@@ -59,11 +59,11 @@ public static class BedrockExtensions
     {
         if ((int)response.HttpStatusCode == 200)
         {
-            return JsonSerializer.Deserialize<MessageResponse>(response.Body, AnthropicJsonSerialzierContext.Default.Options)!;
+            return JsonSerializer.Deserialize<MessageResponse>(response.Body, AnthropicJsonSerializerContext.Default.Options)!;
         }
         else
         {
-            var shape = JsonSerializer.Deserialize<ErrorResponseShape>(response.Body, AnthropicJsonSerialzierContext.Default.Options)!;
+            var shape = JsonSerializer.Deserialize<ErrorResponseShape>(response.Body, AnthropicJsonSerializerContext.Default.Options)!;
 
             var error = shape!.ErrorResponse;
             var errorMsg = error.Message;
@@ -82,7 +82,7 @@ public static class BedrockExtensions
         var ms = new MemoryStream();
         var model = ConvertToBedrockModel(request);
 
-        JsonSerializer.Serialize(ms, model, BedrockAnthropicJsonSerialzierContext.Options);
+        JsonSerializer.Serialize(ms, model, BedrockAnthropicJsonSerializerContext.Options);
 
         ms.Flush();
         ms.Position = 0;

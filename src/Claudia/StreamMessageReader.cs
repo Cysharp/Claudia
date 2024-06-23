@@ -114,21 +114,21 @@ internal class StreamMessageReader : IDisposable
             switch (currentEvent)
             {
                 case MessageStreamEventKind.Ping:
-                    return JsonSerializer.Deserialize<Ping>(ref jsonReader, AnthropicJsonSerialzierContext.Default.Options)!;
+                    return JsonSerializer.Deserialize<Ping>(ref jsonReader, AnthropicJsonSerializerContext.Default.Options)!;
                 case MessageStreamEventKind.MessageStart:
-                    return JsonSerializer.Deserialize<MessageStart>(ref jsonReader, AnthropicJsonSerialzierContext.Default.Options)!;
+                    return JsonSerializer.Deserialize<MessageStart>(ref jsonReader, AnthropicJsonSerializerContext.Default.Options)!;
                 case MessageStreamEventKind.MessageDelta:
-                    return JsonSerializer.Deserialize<MessageDelta>(ref jsonReader, AnthropicJsonSerialzierContext.Default.Options)!;
+                    return JsonSerializer.Deserialize<MessageDelta>(ref jsonReader, AnthropicJsonSerializerContext.Default.Options)!;
                 case MessageStreamEventKind.MessageStop:
-                    return JsonSerializer.Deserialize<MessageStop>(ref jsonReader, AnthropicJsonSerialzierContext.Default.Options)!;
+                    return JsonSerializer.Deserialize<MessageStop>(ref jsonReader, AnthropicJsonSerializerContext.Default.Options)!;
                 case MessageStreamEventKind.ContentBlockStart:
-                    return JsonSerializer.Deserialize<ContentBlockStart>(ref jsonReader, AnthropicJsonSerialzierContext.Default.Options)!;
+                    return JsonSerializer.Deserialize<ContentBlockStart>(ref jsonReader, AnthropicJsonSerializerContext.Default.Options)!;
                 case MessageStreamEventKind.ContentBlockDelta:
-                    return JsonSerializer.Deserialize<ContentBlockDelta>(ref jsonReader, AnthropicJsonSerialzierContext.Default.Options)!;
+                    return JsonSerializer.Deserialize<ContentBlockDelta>(ref jsonReader, AnthropicJsonSerializerContext.Default.Options)!;
                 case MessageStreamEventKind.ContentBlockStop:
-                    return JsonSerializer.Deserialize<ContentBlockStop>(ref jsonReader, AnthropicJsonSerialzierContext.Default.Options)!;
+                    return JsonSerializer.Deserialize<ContentBlockStop>(ref jsonReader, AnthropicJsonSerializerContext.Default.Options)!;
                 case (MessageStreamEventKind)(-1):
-                    var error = JsonSerializer.Deserialize<ErrorResponseShape>(ref jsonReader, AnthropicJsonSerialzierContext.Default.Options);
+                    var error = JsonSerializer.Deserialize<ErrorResponseShape>(ref jsonReader, AnthropicJsonSerializerContext.Default.Options);
                     throw new ClaudiaException(error!.ErrorResponse.ToErrorCode(), error.ErrorResponse.Type, error.ErrorResponse.Message);
                 default:
                     // unknown event, skip

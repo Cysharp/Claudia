@@ -68,7 +68,7 @@ public class Anthropic : IMessages, IDisposable
     {
         request.Stream = null;
         using var msg = await SendRequestAsync(request, overrideOptions, cancellationToken).ConfigureAwait(ConfigureAwait);
-        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct, _) => x.Content.ReadFromJsonAsync<MessageResponse>(AnthropicJsonSerialzierContext.Default.Options, ct), null).ConfigureAwait(ConfigureAwait);
+        var result = await RequestWithAsync(msg, cancellationToken, overrideOptions, static (x, ct, _) => x.Content.ReadFromJsonAsync<MessageResponse>(AnthropicJsonSerializerContext.Default.Options, ct), null).ConfigureAwait(ConfigureAwait);
         return result!;
     }
 
@@ -93,7 +93,7 @@ public class Anthropic : IMessages, IDisposable
 
     async Task<HttpResponseMessage> SendRequestAsync(MessageRequest request, RequestOptions? overrideOptions, CancellationToken cancellationToken)
     {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(request, AnthropicJsonSerialzierContext.Default.Options);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(request, AnthropicJsonSerializerContext.Default.Options);
 
         Uri requestUri = ApiEndpoints.Messages;
         if (HttpClient.BaseAddress != null)
@@ -215,7 +215,7 @@ public class Anthropic : IMessages, IDisposable
 #endif
                         try
                         {
-                            return JsonSerializer.Deserialize<ErrorResponseShape>(responseData, AnthropicJsonSerialzierContext.Default.Options);
+                            return JsonSerializer.Deserialize<ErrorResponseShape>(responseData, AnthropicJsonSerializerContext.Default.Options);
                         }
                         catch
                         {
@@ -228,7 +228,7 @@ public class Anthropic : IMessages, IDisposable
                     var code = (ErrorCode)statusCode;
                     if (code == ErrorCode.InvalidRequestError && IncludeRequestJsonOnInvalidRequestError)
                     {
-                        errorMsg += ". Request: " + JsonSerializer.Serialize(request, AnthropicJsonSerialzierContext.Default.Options);
+                        errorMsg += ". Request: " + JsonSerializer.Serialize(request, AnthropicJsonSerializerContext.Default.Options);
                     }
                     throw new ClaudiaException((ErrorCode)statusCode, error.Type, errorMsg);
                 }

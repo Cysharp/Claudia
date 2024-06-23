@@ -89,7 +89,7 @@ public record class MessageRequest
 
     public override string ToString()
     {
-        return JsonSerializer.Serialize(this, AnthropicJsonSerialzierContext.Default.Options);
+        return JsonSerializer.Serialize(this, AnthropicJsonSerializerContext.Default.Options);
     }
 
     // 2024-04-04 beta: https://docs.anthropic.com/claude/docs/tool-use

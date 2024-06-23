@@ -3,14 +3,14 @@ using System.Text.Json.Serialization;
 
 namespace Claudia;
 
-internal static class BedrockAnthropicJsonSerialzierContext
+internal static class BedrockAnthropicJsonSerializerContext
 {
     public static JsonSerializerOptions Options { get; }
 
-    static BedrockAnthropicJsonSerialzierContext()
+    static BedrockAnthropicJsonSerializerContext()
     {
-        var options = new JsonSerializerOptions(InternalBedrockAnthropicJsonSerialzierContext.Default.Options);
-        options.TypeInfoResolverChain.Add(AnthropicJsonSerialzierContext.Default.Options.TypeInfoResolver!);
+        var options = new JsonSerializerOptions(InternalBedrockAnthropicJsonSerializerContext.Default.Options);
+        options.TypeInfoResolverChain.Add(AnthropicJsonSerializerContext.Default.Options.TypeInfoResolver!);
         options.MakeReadOnly();
 
         Options = options;
@@ -22,7 +22,7 @@ internal static class BedrockAnthropicJsonSerialzierContext
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(BedrockMessageRequest))]
-internal partial class InternalBedrockAnthropicJsonSerialzierContext : JsonSerializerContext
+internal partial class InternalBedrockAnthropicJsonSerializerContext : JsonSerializerContext
 {
 }
 
