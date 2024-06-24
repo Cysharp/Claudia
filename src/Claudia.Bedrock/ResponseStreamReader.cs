@@ -28,15 +28,15 @@ internal static class ResponseStreamReader
                     {
                         case (byte)'a': // st[a]rt
                             ms.Position = 0;
-                            response = JsonSerializer.Deserialize<ContentBlockStart>(ms, AnthropicJsonSerialzierContext.Default.Options)!;
+                            response = JsonSerializer.Deserialize<ContentBlockStart>(ms, AnthropicJsonSerializerContext.Default.Options)!;
                             break;
                         case (byte)'o': // st[o]p
                             ms.Position = 0;
-                            response = JsonSerializer.Deserialize<ContentBlockStop>(ms, AnthropicJsonSerialzierContext.Default.Options)!;
+                            response = JsonSerializer.Deserialize<ContentBlockStop>(ms, AnthropicJsonSerializerContext.Default.Options)!;
                             break;
                         case (byte)'l': // de[l]ta
                             ms.Position = 0;
-                            response = JsonSerializer.Deserialize<ContentBlockDelta>(ms, AnthropicJsonSerialzierContext.Default.Options)!;
+                            response = JsonSerializer.Deserialize<ContentBlockDelta>(ms, AnthropicJsonSerializerContext.Default.Options)!;
                             break;
                         default:
                             break;
@@ -50,15 +50,15 @@ internal static class ResponseStreamReader
                     {
                         case (byte)'a': // st[a]rt
                             ms.Position = 0;
-                            response = JsonSerializer.Deserialize<MessageStart>(ms, AnthropicJsonSerialzierContext.Default.Options)!;
+                            response = JsonSerializer.Deserialize<MessageStart>(ms, AnthropicJsonSerializerContext.Default.Options)!;
                             break;
                         case (byte)'o': // st[o]p
                             ms.Position = 0;
-                            response = JsonSerializer.Deserialize<MessageStop>(ms, AnthropicJsonSerialzierContext.Default.Options)!;
+                            response = JsonSerializer.Deserialize<MessageStop>(ms, AnthropicJsonSerializerContext.Default.Options)!;
                             break;
                         case (byte)'l': // de[l]ta
                             ms.Position = 0;
-                            response = JsonSerializer.Deserialize<MessageDelta>(ms, AnthropicJsonSerialzierContext.Default.Options)!;
+                            response = JsonSerializer.Deserialize<MessageDelta>(ms, AnthropicJsonSerializerContext.Default.Options)!;
                             break;
                         default:
                             break;
@@ -66,11 +66,11 @@ internal static class ResponseStreamReader
                 }
                 else if (c == 'p') // ping
                 {
-                    response = JsonSerializer.Deserialize<Ping>(ms, AnthropicJsonSerialzierContext.Default.Options)!;
+                    response = JsonSerializer.Deserialize<Ping>(ms, AnthropicJsonSerializerContext.Default.Options)!;
                 }
                 else if (c == 'e') // error
                 {
-                    var error = JsonSerializer.Deserialize<ErrorResponseShape>(ms, AnthropicJsonSerialzierContext.Default.Options);
+                    var error = JsonSerializer.Deserialize<ErrorResponseShape>(ms, AnthropicJsonSerializerContext.Default.Options);
                     var err = new ClaudiaException(error!.ErrorResponse.ToErrorCode(), error.ErrorResponse.Type, error.ErrorResponse.Message);
                     channel.Writer.Complete(err);
                 }

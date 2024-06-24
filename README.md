@@ -338,7 +338,7 @@ public class RateLimitDetailsHandler : DelegatingHandler
             var tokenRemaining = int.Parse(response.Headers.GetValues("anthropic-ratelimit-tokens-remaining").First());
             var tokenReset = DateTime.Parse(response.Headers.GetValues("anthropic-ratelimit-tokens-reset").First());
 
-            var error = await response.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerialzierContext.Default.Options, cancellationToken);
+            var error = await response.Content.ReadFromJsonAsync<ErrorResponseShape>(AnthropicJsonSerializerContext.Default.Options, cancellationToken);
             var message = error!.ErrorResponse.Message;
 
             throw new AnthropicRateLimitException(requestLimit, requestRemaining, requestReset, tokenLimit, tokenRemaining, tokenReset, message);
@@ -475,20 +475,20 @@ var message = await anthropic.Messages.CreateAsync(new()
 
 Save / Load
 ---
-All request and response models can be serialized using `System.Text.Json.JsonSerializer`. Additionally, `AnthropicJsonSerialzierContext` has pre-generated serializers available through Source Generator, enabling even higher performance.
+All request and response models can be serialized using `System.Text.Json.JsonSerializer`. Additionally, `AnthropicJsonSerializerContext` has pre-generated serializers available through Source Generator, enabling even higher performance.
 
 ```csharp
 List<Message> chatMessages;
 
 void Save()
 {
-    var json = JsonSerializer.Serialize(chatMessages, AnthropicJsonSerialzierContext.Default.Options);
+    var json = JsonSerializer.Serialize(chatMessages, AnthropicJsonSerializerContext.Default.Options);
     File.WriteAllText("chat.json", json);
 }
 
 void Load()
 {
-    chatMessages = JsonSerializer.Deserialize<List<Message>>("chat.json", AnthropicJsonSerialzierContext.Default.Options)!;
+    chatMessages = JsonSerializer.Deserialize<List<Message>>("chat.json", AnthropicJsonSerializerContext.Default.Options)!;
 }
 ```
 
