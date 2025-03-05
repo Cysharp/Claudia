@@ -30,7 +30,7 @@ var anthropic = new Anthropic
 
 var message = await anthropic.Messages.CreateAsync(new()
 {
-    Model = "claude-3-5-sonnet-20240620", // you can use Claudia.Models.Claude3_5Sonnet string constant
+    Model = "claude-3-7-sonnet-20250219", // you can use Claudia.Models.Claude3_7Sonnet string constant
     MaxTokens = 1024,
     Messages = [new() { Role = "user", Content = "Hello, Claude" }]
 });
@@ -51,7 +51,7 @@ var anthropic = new Anthropic();
 
 var stream = anthropic.Messages.CreateStreamAsync(new()
 {
-    Model = "claude-3-opus-20240229",
+    Model = "claude-3-7-sonnet-20250219",
     MaxTokens = 1024,
     Messages = [new() { Role = "user", Content = "Hello, Claude" }]
 });
@@ -87,7 +87,7 @@ using Claudia;
 
 var request = new MessageRequest()
 {
-    Model = Models.Claude3Opus,
+    Model = Models.Claude3_7Sonnet,
     MaxTokens = 1024,
     Messages = [new() { Role = Roles.User, Content = "Hello, Claude" }]
 };
@@ -97,7 +97,7 @@ Documentation for each method, request param, and response field are available i
 
 All of MessageRequest definitions are here [MessageRequest.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/MessageRequest.cs) and MessageResponse definitions are here [MessageResponse.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/MessagesResponse.cs).
 
-Also, commonly used constants are defined. For example, `Models.Claude3Opus` is `claude-3-opus-20240229`, and constants like `Roles.User` and `Roles.Assistant` are used for roles like "user" and "assistant". Please refer to [Constant.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/Constant.cs) for all the constants. In addition, the [system prompt used in Claude's official chat UI](https://clutwitter.com/AmandaAskell/status/1765207842993434880) is defined as `SystemPrompts.Claude3`.
+Also, commonly used constants are defined. For example, `Models.Claude3_7Sonnet` is `claude-3-7-sonnet-20250219`, and constants like `Roles.User` and `Roles.Assistant` are used for roles like "user" and "assistant". Please refer to [Constant.cs](https://github.com/Cysharp/Claudia/blob/main/src/Claudia/Constant.cs) for all the constants. In addition, the [system prompt used in Claude's official chat UI](https://clutwitter.com/AmandaAskell/status/1765207842993434880) is defined as `SystemPrompts.Claude3`.
 
 Counting Tokens
 ---
@@ -161,7 +161,7 @@ try
 {
     var msg = await anthropic.Messages.CreateAsync(new()
     {
-        Model = Models.Claude3Opus,
+        Model = Models.Claude3_7Sonnet,
         MaxTokens = 1024,
         Messages = [new() { Role = "user", Content = "Hello, Claude" }]
     });
@@ -237,7 +237,7 @@ await anthropic.Messages.CreateAsync(new()
 {
     MaxTokens = 1024,
     Messages = [new() { Role = "user", Content = "Hello, Claude" }],
-    Model = "claude-3-opus-20240229"
+    Model = "claude-3-7-sonnet-20250219"
 }, new()
 {
     Timeout = TimeSpan.FromSeconds(5)
@@ -261,7 +261,7 @@ await anthropic.Messages.CreateAsync(new()
 {
     MaxTokens = 1024,
     Messages = [new() { Role = "user", Content = "Hello, Claude" }],
-    Model = "claude-3-opus-20240229"
+    Model = "claude-3-7-sonnet-20250219"
 }, new()
 {
     Headers = new() { { "anthropic-version", "My-Custom-Value" } }
@@ -929,7 +929,7 @@ We provide support for the [Anthropic Bedrock API](https://aws.amazon.com/bedroc
 
 > PM> Install-Package [Claudia.Bedrock](https://www.nuget.org/packages/Claudia.Bedrock)
 
-To create an `AmazonBedrockRuntimeClient` from the AWS SDK and specify the Bedrock Model ID using `UseAnthropic`, set the Model property of RequestMessage to `anthropic_version`. The rest is the same as a regular Anthropic Client.
+To create an `IAmazonBedrockRuntime` from the AWS SDK and specify the Bedrock Model ID using `UseAnthropic`, set the Model property of RequestMessage to `anthropic_version`. The rest is the same as a regular Anthropic Client.
 
 ```csharp
 // credentials is your own
