@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Claudia;
 
-public class BedrockAnthropicClient(AmazonBedrockRuntimeClient client, string modelId) : IMessages
+public class BedrockAnthropicClient(IAmazonBedrockRuntime client, string modelId) : IMessages
 {
     public IMessages Messages => this;
 
@@ -28,12 +28,12 @@ public class BedrockAnthropicClient(AmazonBedrockRuntimeClient client, string mo
 
 public static class BedrockExtensions
 {
-    public static BedrockAnthropicClient UseAnthropic(this AmazonBedrockRuntimeClient client, string modelId)
+    public static BedrockAnthropicClient UseAnthropic(this IAmazonBedrockRuntime client, string modelId)
     {
         return new BedrockAnthropicClient(client, modelId);
     }
 
-    public static Task<InvokeModelResponse> InvokeModelAsync(this AmazonBedrockRuntimeClient client, string modelId, MessageRequest request, CancellationToken cancellationToken = default)
+    public static Task<InvokeModelResponse> InvokeModelAsync(this IAmazonBedrockRuntime client, string modelId, MessageRequest request, CancellationToken cancellationToken = default)
     {
         return client.InvokeModelAsync(new Amazon.BedrockRuntime.Model.InvokeModelRequest
         {
@@ -44,7 +44,7 @@ public static class BedrockExtensions
         }, cancellationToken);
     }
 
-    public static Task<InvokeModelWithResponseStreamResponse> InvokeModelWithResponseStreamAsync(this AmazonBedrockRuntimeClient client, string modelId, MessageRequest request, CancellationToken cancellationToken = default)
+    public static Task<InvokeModelWithResponseStreamResponse> InvokeModelWithResponseStreamAsync(this IAmazonBedrockRuntime client, string modelId, MessageRequest request, CancellationToken cancellationToken = default)
     {
         return client.InvokeModelWithResponseStreamAsync(new Amazon.BedrockRuntime.Model.InvokeModelWithResponseStreamRequest
         {
