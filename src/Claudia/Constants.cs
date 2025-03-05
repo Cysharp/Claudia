@@ -18,10 +18,11 @@ public static class Models
     /// </summary>
     public const string Claude3Haiku = "claude-3-haiku-20240307";
 
-    /// <summary>
-    /// Most intelligent model
-    /// </summary>
+    /// <summary>Previous most intelligent model</summary>
     public const string Claude3_5Sonnet = "claude-3-5-sonnet-20240620";
+    
+    /// <summary>Most intelligent model</summary>
+    public const string Claude3_7Sonnet = "claude-3-7-sonnet-20250219";
 
     /// <summary>Updated version of Claude 2 with improved accuracy</summary>
     public const string Claude2_1 = "claude-2.1";
