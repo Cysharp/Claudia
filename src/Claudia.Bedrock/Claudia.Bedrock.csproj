@@ -10,15 +10,13 @@
 		<NoWarn>1701;1702;1591;1573</NoWarn>
 
 		<!-- NuGet Packaging -->
+    <IsPackable>true</IsPackable>
 		<PackageTags>ai;</PackageTags>
 		<Description>AWS Bedrock support for Claudia.</Description>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\..\Icon.png" Pack="true" PackagePath="/" />
-		<EmbeddedResource Include="..\..\LICENSE" />
-
 		<PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.301.47" />
 	</ItemGroup>
 
