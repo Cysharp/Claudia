@@ -14,7 +14,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>Icon.png</PackageIcon>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>../../opensource.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)opensource.snk</AssemblyOriginatorKeyFile>
     <!-- For BenchmarkDotNet generated project-->
     <AssemblyOriginatorKeyFile Condition="EXISTS('./../../../../../../opensource.snk')">../../../../../../opensource.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
