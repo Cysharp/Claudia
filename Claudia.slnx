@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/sandbox/">
+    <Project Path="sandbox/BedrockBlazorApp1/BedrockBlazorApp1.csproj" />
+    <Project Path="sandbox/BedrockConsoleApp/BedrockConsoleApp.csproj" />
+    <Project Path="sandbox/BlazorApp1/BlazorApp1.csproj" />
+    <Project Path="sandbox/ConsoleApp1/ConsoleApp1.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Claudia.Bedrock/Claudia.Bedrock.csproj" />
+    <Project Path="src/Claudia.FunctionGenerator/Claudia.FunctionGenerator.csproj" />
+    <Project Path="src/Claudia/Claudia.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Claudia.FunctionGenerator.Tests/Claudia.FunctionGenerator.Tests.csproj" />
+    <Project Path="tests/Claudia.Tests/Claudia.Tests.csproj" />
+  </Folder>
+</Solution>
