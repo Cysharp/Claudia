@@ -1,3 +1,5 @@
+This project was archived. Please use [Official Anthropic C# SDK](https://github.com/anthropics/anthropic-sdk-csharp) instead.
+
 # Claudia
 
 Unofficial [Anthropic Claude API](https://www.anthropic.com/api) client for .NET.
